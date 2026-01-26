@@ -12,10 +12,17 @@ import {
 
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { pick, types, isCancel } from "@react-native-documents/picker";
+import BASE_URL from "../../API-URL/API";
+
+
+
 
 const UploadTeachers = () => {
 
   const [selectedFile, setSelectedFile] = useState(null);
+ 
+const [uploadedFile, setUploadedFile] = useState(null);
+
 
   
   const pickExcelFile = async () => {
@@ -62,7 +69,7 @@ const UploadTeachers = () => {
       });
 
       const response = await fetch(
-        "http://192.168.0.103/FYP/api/teacher/upload",
+        `${BASE_URL}/teacher/upload`,
         {
           method: "POST",
           body: formData,
@@ -72,6 +79,15 @@ const UploadTeachers = () => {
 
       const text = await response.text();
       Alert.alert("Server Response", text);
+
+      setUploadedFile({
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+      });
+
+
+      setSelectedFile(null);
 
     } catch (error) {
       console.error("Upload error:", error);
@@ -114,6 +130,42 @@ const UploadTeachers = () => {
         <Icon name="upload" size={20} color="#fff" />
         <Text style={ss.uploadButtonText}>Upload File</Text>
       </TouchableOpacity>
+
+      
+            {uploadedFile && (
+              <View style={ss.uploadedContainer}>
+      
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                  <Icon name="check-circle" size={22} color="#1E7F4D" />
+                  <Text style={ss.uploadedTitle}> Uploaded Successfully</Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="description" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    File: {uploadedFile.name}
+                  </Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="storage" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    Size: {(uploadedFile.size / 1024).toFixed(2)} KB
+                  </Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="insert-drive-file" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    Type: Excel File
+                  </Text>
+                </View>
+      
+              </View>
+            )}
+
+
+
     </ScrollView>
   );
 };
@@ -152,6 +204,7 @@ const ss = StyleSheet.create({
     height: 200,
     borderWidth: 1,
     borderColor: "#1E7F4D",
+    backgroundColor: "#9bd5ac",
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center"
@@ -172,6 +225,36 @@ const ss = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600"
   }
+,
+
+   uploadedContainer: {
+    backgroundColor: "#eafaf1",
+    marginHorizontal: 20,
+    marginTop: 25,
+    padding: 16,
+    borderRadius: 14,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#1E7F4D",
+  },
+
+  uploadedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E7F4D",
+    marginBottom: 8,
+  },
+
+  uploadedText: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
 });
 
 export default UploadTeachers;

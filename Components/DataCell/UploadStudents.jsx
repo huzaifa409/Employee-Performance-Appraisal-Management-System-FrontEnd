@@ -12,11 +12,15 @@ import {
 
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { pick, types, isCancel } from "@react-native-documents/picker";
+import BASE_URL from "../../API-URL/API";
 
 const UploadStudents = () => {
   const [selectedFile, setSelectedFile] = useState(null);
 
-  // PICK FILE
+  const [uploadedFile, setUploadedFile] = useState(null);
+
+
+
   const pickExcelFile = async () => {
     try {
       const result = await pick({
@@ -40,7 +44,7 @@ const UploadStudents = () => {
     }
   };
 
-  // UPLOAD FILE
+  
   const uploadFile = async () => {
     if (!selectedFile) {
       Alert.alert("No File", "Please select an Excel file first");
@@ -61,11 +65,11 @@ const UploadStudents = () => {
       });
 
       const response = await fetch(
-        "http://192.168.0.103/FYP/api/student/upload", // <-- your API URL here
+        `${BASE_URL}/student/upload`,
         {
           method: "POST",
           body: formData,
-          // ❌ DO NOT set Content-Type manually
+
         }
       );
 
@@ -76,6 +80,15 @@ const UploadStudents = () => {
 
       const text = await response.text();
       Alert.alert("Server Response", text);
+
+      setUploadedFile({
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+      });
+
+
+      setSelectedFile(null);
     } catch (error) {
       console.error("Upload error:", error);
       Alert.alert("Error", error.message || "Upload failed");
@@ -107,7 +120,7 @@ const UploadStudents = () => {
         </Text>
       </View>
 
-      {/* FILE PICKER */}
+
       <TouchableOpacity
         style={[ss.file, { marginTop: 40 }]}
         onPress={pickExcelFile}
@@ -120,11 +133,45 @@ const UploadStudents = () => {
         </View>
       </TouchableOpacity>
 
-      {/* UPLOAD BUTTON */}
+
       <TouchableOpacity style={ss.uploadButton} onPress={uploadFile}>
         <Icon name="upload" size={20} color="#fff" />
         <Text style={ss.uploadButtonText}>Upload File</Text>
       </TouchableOpacity>
+
+   
+      {uploadedFile && (
+        <View style={ss.uploadedContainer}>
+
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+            <Icon name="check-circle" size={22} color="#1E7F4D" />
+            <Text style={ss.uploadedTitle}> Uploaded Successfully</Text>
+          </View>
+
+          <View style={ss.infoRow}>
+            <Icon name="description" size={18} color="#1E7F4D" />
+            <Text style={ss.uploadedText}>
+              File: {uploadedFile.name}
+            </Text>
+          </View>
+
+          <View style={ss.infoRow}>
+            <Icon name="storage" size={18} color="#1E7F4D" />
+            <Text style={ss.uploadedText}>
+              Size: {(uploadedFile.size / 1024).toFixed(2)} KB
+            </Text>
+          </View>
+
+          <View style={ss.infoRow}>
+            <Icon name="insert-drive-file" size={18} color="#1E7F4D" />
+            <Text style={ss.uploadedText}>
+              Type: Excel File
+            </Text>
+          </View>
+
+        </View>
+      )}
+
     </ScrollView>
   );
 };
@@ -144,7 +191,7 @@ const ss = StyleSheet.create({
 
   file: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 14,
@@ -193,6 +240,36 @@ const ss = StyleSheet.create({
   },
 
   uploadButtonText: { color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 8, padding: 5 },
+
+  uploadedContainer: {
+    backgroundColor: "#eafaf1",
+    marginHorizontal: 20,
+    marginTop: 25,
+    padding: 16,
+    borderRadius: 14,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#1E7F4D",
+  },
+
+  uploadedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E7F4D",
+    marginBottom: 8,
+  },
+
+  uploadedText: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+
 });
 
 export default UploadStudents;

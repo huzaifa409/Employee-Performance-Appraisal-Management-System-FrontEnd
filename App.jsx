@@ -1,39 +1,22 @@
-import React from "react";
-import { View, Text } from 'react-native'
+import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import DcDashboard from'./Components/DataCell/DataCellDashboard'
-import UploadTeachers from'./Components/DataCell/UploadTeachers'
-import UploadStudents from './Components/DataCell/UploadStudents'
-import UploadCourses from './Components/DataCell/UploadCourse'
+import Login from "./Components/Login/Login";
+import DataCellNavigation from "./Navigations/DataCellNavigations";
+import HODNavigation from "./Navigations/HODNavigations";
+import AddPeerEvaluator from "./Components/HOD/AddPeerEvaluator"
 
-
-
-const stack=createNativeStackNavigator();
-
-const App = () => {
-
+export default function App() {
+  const [role, setRole] = useState(null);
   return (
-
     <NavigationContainer>
-       <stack.Navigator initialRouteName="DataCellDashboard">
-         <stack.Screen name="DataCellDashboard" component={DcDashboard} options={{ headerShown: false }}  />
-         <stack.Screen name="UploadTeachers" component={UploadTeachers} options={{ headerShown: false }}  />
-         <stack.Screen name="UploadStudents" component={UploadStudents} options={{ headerShown: false }}  />
-         <stack.Screen name="UploadCourses" component={UploadCourses} options={{ headerShown: false }}  />
+      
+      {!role && <Login onLogin={(newRole) => setRole(newRole)} />}
 
-
-
-
-       </stack.Navigator>
+      {role === "DATACELL" && <DataCellNavigation />}
+      {role === "HOD" && <HODNavigation />}
     </NavigationContainer>
 
-  )
+      
 
-
+  );
 }
-
-export default App;
-
-
-

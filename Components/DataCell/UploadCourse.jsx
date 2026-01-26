@@ -9,14 +9,15 @@ import {
   Alert,
   Platform
 } from "react-native";
-
+import BASE_URL from "../../API-URL/API";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { pick, types, isCancel } from "@react-native-documents/picker";
 
 const UploadCourses = () => {
   const [selectedFile, setSelectedFile] = useState(null);
+   const [uploadedFile, setUploadedFile] = useState(null);
 
-  // PICK EXCEL FILE
+
   const pickExcelFile = async () => {
     try {
       const result = await pick({
@@ -40,7 +41,7 @@ const UploadCourses = () => {
     }
   };
 
-  // UPLOAD FILE TO API
+
   const uploadFile = async () => {
     if (!selectedFile) {
       Alert.alert("No File", "Please select an Excel file first");
@@ -60,20 +61,27 @@ const UploadCourses = () => {
         name: selectedFile.name,
       });
 
-      // Replace with your published API IP or localhost if testing on PC
+     
       const response = await fetch(
-        "http://192.168.0.103/FYP/api/course/upload",
+        `${BASE_URL}/course/upload`,
         {
           method: "POST",
           body: formData,
-          // ❌ Do NOT set content-type manually; fetch sets it for multipart/form-data
+         
         }
       );
 
-      const result = await response.text(); // or response.json() if API returns JSON
-      Alert.alert("Server Response", result);
+      const text = await response.text(); 
+       Alert.alert("Server Response", text);
 
-      // Clear selected file after upload
+      setUploadedFile({
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+      });
+
+
+      
       setSelectedFile(null);
     } catch (error) {
       console.error("Upload error:", error);
@@ -106,7 +114,7 @@ const UploadCourses = () => {
         </Text>
       </View>
 
-      {/* FILE PICKER */}
+      
       <TouchableOpacity
         style={[ss.file, { marginTop: 40 }]}
         onPress={pickExcelFile}
@@ -119,11 +127,43 @@ const UploadCourses = () => {
         </View>
       </TouchableOpacity>
 
-      {/* UPLOAD BUTTON */}
+    
       <TouchableOpacity style={ss.uploadButton} onPress={uploadFile}>
         <Icon name="upload" size={20} color="#fff" />
         <Text style={ss.uploadButtonText}>Upload File</Text>
       </TouchableOpacity>
+
+      {uploadedFile && (
+              <View style={ss.uploadedContainer}>
+      
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 10 }}>
+                  <Icon name="check-circle" size={22} color="#1E7F4D" />
+                  <Text style={ss.uploadedTitle}> Uploaded Successfully</Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="description" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    File: {uploadedFile.name}
+                  </Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="storage" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    Size: {(uploadedFile.size / 1024).toFixed(2)} KB
+                  </Text>
+                </View>
+      
+                <View style={ss.infoRow}>
+                  <Icon name="insert-drive-file" size={18} color="#1E7F4D" />
+                  <Text style={ss.uploadedText}>
+                    Type: Excel File
+                  </Text>
+                </View>
+      
+              </View>
+            )}
     </ScrollView>
   );
 };
@@ -183,6 +223,35 @@ const ss = StyleSheet.create({
     marginLeft: 8,
     fontSize: 16,
     fontWeight: "600",
+  },
+
+   uploadedContainer: {
+    backgroundColor: "#eafaf1",
+    marginHorizontal: 20,
+    marginTop: 25,
+    padding: 16,
+    borderRadius: 14,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#1E7F4D",
+  },
+
+  uploadedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1E7F4D",
+    marginBottom: 8,
+  },
+
+  uploadedText: {
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 4,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
   },
 });
 
