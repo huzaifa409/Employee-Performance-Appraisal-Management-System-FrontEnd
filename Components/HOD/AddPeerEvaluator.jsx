@@ -1,13 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import {View,Text,FlatList,TouchableOpacity,StyleSheet, ScrollView, Alert,} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Dropdown } from 'react-native-element-dropdown';
 import BASE_URL from '../../API-URL/API';
@@ -18,27 +10,48 @@ export default function AddPeerEvaluatorScreen() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedTeachers, setSelectedTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [PeerEvaluator,setPeerEvaluators]=useState([]);
+  const [peerEvaluators, setPeerEvaluators] = useState([]);
+
+ 
+  const ShowPeerEvaluators = ({ item }) => (
+  <View style={styles.assignedCard}>
+    <View style={styles.assignedLeft}>
+      <Icon name="person" size={24} color="#2e7d32" />
+    </View>
+
+    <View style={styles.assignedContent}>
+      <Text style={styles.assignedName}>{item.name}</Text>
+      <Text style={styles.assignedDept}>{item.department}</Text>
+    </View>
+
+    <View style={styles.assignedBadge}>
+      <Text style={styles.assignedBadgeText}>Assigned</Text>
+    </View>
+  </View>
+);
 
 
-  const getPeerEvaluators=async ()=>
-  {
-    try{
-        const res=await fetch(`${BASE_URL}/PeerEvaluators/BySession?${sessions}`)
-        const data=await res.json();
-        if(res.status==200)
-        {
-          setPeerEvaluators(data);
-        }
-        
+ 
+  const getPeerEvaluators = async (sessionId) => {
+    try {
+      setPeerEvaluators([]);
+
+      const res = await fetch(
+        `${BASE_URL}/PeerEvaluator/BySession/${sessionId}`
+      );
+
+      if (!res.ok) {
+        setPeerEvaluators([]);
+        return;
       }
-        catch (error) {
-      console.log(error);
-      Alert.alert('Error', 'Failed to load sessions');
-    }
 
-    
-  }
+      const data = await res.json();
+      setPeerEvaluators(data);
+    } catch (error) {
+      console.log(error);
+      Alert.alert('Error', 'Failed to load peer evaluators');
+    }
+  };
 
   const getSessions = async () => {
     try {
@@ -57,7 +70,7 @@ export default function AddPeerEvaluatorScreen() {
     }
   };
 
-  
+
   const getTeachers = async () => {
     try {
       const res = await fetch(`${BASE_URL}/PeerEvaluator/Teachers`);
@@ -90,6 +103,7 @@ export default function AddPeerEvaluatorScreen() {
     }
   };
 
+  
   const addPeerEvaluators = async () => {
     if (!selectedSession) {
       Alert.alert('Validation', 'Please select a session');
@@ -116,9 +130,10 @@ export default function AddPeerEvaluatorScreen() {
       });
 
       const msg = await res.text();
-
       Alert.alert('Success', msg);
+      
       setSelectedTeachers([]);
+      getPeerEvaluators(selectedSession); 
     } catch (error) {
       console.log(error);
       Alert.alert('Error', 'Failed to add peer evaluators');
@@ -127,7 +142,7 @@ export default function AddPeerEvaluatorScreen() {
     }
   };
 
-  
+
   const renderTeacher = ({ item }) => (
     <TouchableOpacity
       style={[
@@ -150,7 +165,7 @@ export default function AddPeerEvaluatorScreen() {
     <ScrollView style={styles.container}>
       <Text style={styles.heading}>Add Peer Evaluator</Text>
 
-      
+   
       <Dropdown
         style={styles.dropdown}
         data={sessions}
@@ -158,7 +173,10 @@ export default function AddPeerEvaluatorScreen() {
         valueField="value"
         placeholder="Select Session"
         value={selectedSession}
-        onChange={item => setSelectedSession(item.value)}
+        onChange={item => {
+          setSelectedSession(item.value);
+          getPeerEvaluators(item.value);
+        }}
         renderLeftIcon={() => (
           <Icon name="calendar-today" size={20} color="#4CAF50" />
         )}
@@ -186,9 +204,19 @@ export default function AddPeerEvaluatorScreen() {
             : `Add ${selectedTeachers.length} Teachers as Peer Evaluators`}
         </Text>
       </TouchableOpacity>
+
+      <Text style={styles.sectionTitle}>Assigned Peer Evaluators</Text>
+
+      <FlatList
+        data={peerEvaluators}
+        keyExtractor={item => item.userID.toString()}
+        renderItem={ShowPeerEvaluators}
+        scrollEnabled={false}
+      />
     </ScrollView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#fff' },
@@ -236,4 +264,50 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   addButtonText: { color: '#fff', fontWeight: 'bold' },
+
+  assignedCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#f9fff9',
+  borderRadius: 10,
+  padding: 12,
+  marginBottom: 10,
+  borderLeftWidth: 5,
+  borderLeftColor: '#4CAF50',
+  elevation: 2,
+},
+
+assignedLeft: {
+  marginRight: 12,
+},
+
+assignedContent: {
+  flex: 1,
+},
+
+assignedName: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#1b5e20',
+},
+
+assignedDept: {
+  fontSize: 13,
+  color: '#555',
+  marginTop: 2,
+},
+
+assignedBadge: {
+  backgroundColor: '#e8f5e9',
+  paddingHorizontal: 10,
+  paddingVertical: 4,
+  borderRadius: 12,
+},
+
+assignedBadgeText: {
+  fontSize: 11,
+  fontWeight: '600',
+  color: '#2e7d32',
+},
+
 });

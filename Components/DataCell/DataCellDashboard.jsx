@@ -71,6 +71,20 @@ const DcDashboard = ({navigation}) => {
 
         <Icon name="chevron-right" size={26} color="#1E7F4D" />
       </TouchableOpacity>
+      <TouchableOpacity style={ss.containers} onPress={()=>navigation.navigate("UploadEnrollment")}>
+        <View style={ss.iconContainer}>
+          <Icon name="person" size={22} color="#1E7F4D" />
+        </View>
+
+        <View style={ss.textBlock}>
+          <Text style={ss.HeadText}>Upload Enrollment</Text>
+          <Text style={ss.subtitle}>
+            Upload Enrollment list using Excel file
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#1E7F4D" />
+      </TouchableOpacity>
 
       
       <TouchableOpacity style={ss.containers} onPress={()=>navigation.navigate("UploadCourses")}>
@@ -107,7 +121,7 @@ const ss = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 14,
-    paddingTop:50,
+    paddingTop:10,
     paddingHorizontal: 14,
     margin: 0,
     marginTop:0,

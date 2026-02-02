@@ -51,7 +51,7 @@ const HodDashboard=({navigation})=>
              </View>
           </View>  
 
-          <TouchableOpacity style={[ss.containers, { marginTop: 40, backgroundColor: '#e8faf0'}]}>
+          <TouchableOpacity style={[ss.containers, { marginTop: 40, backgroundColor: '#e8faf0'}]} onPress={()=>navigation.navigate("AddKPI")}>
                   <View style={[ss.iconContainer,{backgroundColor: '#1E7F4D'}]}>
                     <Icon name="add" size={26} color="#fff"  />
                   </View>
@@ -80,7 +80,7 @@ const HodDashboard=({navigation})=>
           
                   <Icon name="chevron-right" size={26} color="#1E7F4D" />
                 </TouchableOpacity>
-          <TouchableOpacity style={[ss.containers, { marginTop: 3 ,backgroundColor: '#f6e4fa'}]}>
+          <TouchableOpacity style={[ss.containers, { marginTop: 3 ,backgroundColor: '#f6e4fa'}]} onPress={()=>navigation.navigate("CourseManagement")}>
             <View style={[ss.iconContainer,{backgroundColor: '#c40bf7'}]}>
                     <Icon name="checklist" size={26} color="#fff" />
 
@@ -195,17 +195,13 @@ const ss = StyleSheet.create({
   },
   box:
   {
-   
     width:160,
     height:160,
-   
     borderRadius:22,
     margin:10,
-     backgroundColor: "#ffffff",
-     elevation:9
+    backgroundColor: "#ffffff",
+    elevation:9
     
-     
-
 },
 icon:
 {
