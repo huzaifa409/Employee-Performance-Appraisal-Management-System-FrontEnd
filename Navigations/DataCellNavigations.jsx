@@ -11,13 +11,13 @@ import UploadEnrollment from '../Components/DataCell/UploadEnrollment'
 const stack=createNativeStackNavigator();
 
 
-const DCNavigation =()=>
+const DCNavigation =({onLogout})=>
 {
 
 return(
         <stack.Navigator initialRouteName="DataCellDashboard">
 
-          <stack.Screen name="DataCellDashboard" component={DcDashboard} options={{ headerShown: false }}  />
+          <stack.Screen name="DataCellDashboard" component={DcDashboard} options={{ headerShown: false }} initialParams={{ onLogout }}  />
           <stack.Screen name="UploadTeachers" component={UploadTeachers} options={{ headerShown: false }}  />
           <stack.Screen name="UploadStudents" component={UploadStudents} options={{ headerShown: false }}  />
           <stack.Screen name="UploadCourses" component={UploadCourses} options={{ headerShown: false }}  />

@@ -1,24 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Image,
   TextInput,
   TouchableOpacity,
   ScrollView,
   FlatList,
+  Alert,
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
+import BASE_URL from "../../API-URL/API";
 
 const AddKPI = () => {
+  // --------- STATE HOOKS ---------
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
 
-  const [kpiTypes] = useState([
-    { label: "Teacher-CS", value: "Teacher-CS" },
-    { label: "Teacher-Non CS", value: "Teacher-Non CS" },
-  ]);
+  const [employeeTypes, setEmployeeTypes] = useState([]);
+  const [selectedEmpType, setSelectedEmpType] = useState(null);
 
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [kpiName, setKpiName] = useState("");
   const [kpiWeight, setKpiWeight] = useState("");
   const [showSubSection, setShowSubSection] = useState(false);
@@ -28,112 +29,182 @@ const AddKPI = () => {
   const [subKpis, setSubKpis] = useState([]);
 
   const [savedKpis, setSavedKpis] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  /* ---------------- ADD SUB KPI ---------------- */
+  // --------- FETCH DROPDOWNS ---------
+  useEffect(() => {
+    const fetchDropdowns = async () => {
+      try {
+        const resSessions = await fetch(`${BASE_URL}/Kpi/sessions`);
+        const sessionsData = await resSessions.json();
+        setSessions(sessionsData);
+
+        const resTypes = await fetch(`${BASE_URL}/Kpi/emptypes`);
+        const empData = await resTypes.json();
+        const mappedTypes = empData.map((t) => ({
+          label: t.Type || t.type,
+          value: t.Id || t.id,
+        }));
+        setEmployeeTypes(mappedTypes);
+      } catch (err) {
+        Alert.alert("Error", "Failed to load sessions or employee types");
+      }
+    };
+    fetchDropdowns();
+  }, []);
+
+  // --------- FETCH SAVED KPIS ---------
+  useEffect(() => {
+    const fetchSavedKpis = async () => {
+      if (!selectedSession || !selectedEmpType) {
+        setSavedKpis([]);
+        return;
+      }
+      try {
+        setLoading(true);
+        const res = await fetch(
+          `${BASE_URL}/Kpi/view-weights/${selectedSession}/${selectedEmpType}`
+        );
+        const data = await res.json();
+        setSavedKpis(data);
+      } catch (err) {
+        Alert.alert("Error", "Failed to load saved KPIs");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSavedKpis();
+  }, [selectedSession, selectedEmpType]);
+
+  // --------- ADD SUB KPI ---------
   const addSubKpi = () => {
-    if (!subName || !subWeight) return;
-
-    setSubKpis(prev => [
+    if (!subName || !subWeight) {
+      Alert.alert("Error", "Please enter sub-KPI name and weight");
+      return;
+    }
+    setSubKpis((prev) => [
       ...prev,
-      {
-        id: Date.now().toString(),
-        name: subName,
-        weight: subWeight,
-      },
+      { id: Date.now().toString(), name: subName, weight: subWeight },
     ]);
-
     setSubName("");
     setSubWeight("");
   };
 
-  /* ---------------- SAVE KPI ---------------- */
-  const saveKpi = () => {
-    if (!kpiName || !kpiWeight || subKpis.length === 0) return;
+  // --------- SAVE KPI ---------
+  const saveKpi = async () => {
+    if (!selectedSession || !selectedEmpType || !kpiName || !kpiWeight || subKpis.length === 0) {
+      Alert.alert("Error", "Complete all fields and add at least one sub-KPI");
+      return;
+    }
 
-    const newKpi = {
-      id: Date.now().toString(),
-      category: selectedCategory,
-      name: kpiName,
-      weight: kpiWeight,
-      subKpis,
+    const payload = {
+      SessionId: parseInt(selectedSession),
+      EmployeeTypeId: parseInt(selectedEmpType),
+      KPIName: kpiName,
+      RequestedKPIWeight: parseInt(kpiWeight),
+      SubKPIs: subKpis.map((s) => ({ Name: s.name, Weight: parseInt(s.weight) })),
     };
 
-    setSavedKpis(prev => [...prev, newKpi]);
+    try {
+      setLoading(true);
+      const res = await fetch(`${BASE_URL}/Kpi/create-with-weight`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    // reset
-    setKpiName("");
-    setKpiWeight("");
-    setSubKpis([]);
-    setShowSubSection(false);
+      if (!res.ok) throw new Error("Failed to save KPI");
+      Alert.alert("Success", "KPI Saved Successfully!");
+
+      // Reset form
+      setKpiName("");
+      setKpiWeight("");
+      setSubKpis([]);
+      setShowSubSection(false);
+
+      // Refresh saved KPIs
+      const updated = await fetch(
+        `${BASE_URL}/Kpi/view-weights/${selectedSession}/${selectedEmpType}`
+      );
+      const data = await updated.json();
+      setSavedKpis(data);
+    } catch (err) {
+      Alert.alert("Error", err.message || "Save failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  /* ---------------- RENDER SUB KPI ---------------- */
+  // --------- RENDER SUB KPI ---------
   const renderSubKpi = ({ item }) => (
     <View style={ss.subRow}>
-      <Text>{item.name} — {item.weight}%</Text>
+      <Text>
+        {item.name} — {item.weight}%
+      </Text>
     </View>
   );
 
-  /* ---------------- RENDER KPI CARD ---------------- */
+  // --------- RENDER SAVED KPI CARD ---------
   const renderKpiCard = ({ item }) => (
     <View style={ss.categoryCard}>
       <View style={ss.rowBetween}>
-        <Text style={ss.kpiTitle}>{item.name}</Text>
-        <Text style={{ color: "#0F9D58" }}>{item.weight}%</Text>
+        <Text style={ss.kpiTitle}>{item.kpiName}</Text>
+        <Text style={{ color: "#0F9D58" }}>{item.totalKpiWeight}%</Text>
       </View>
-
-      <Text style={ss.subText}>
-        {item.subKpis.length} Sub-KPIs
-      </Text>
-
+      <Text style={ss.subText}>{item.subKpis.length} Sub-KPIs</Text>
       <FlatList
         data={item.subKpis}
-        keyExtractor={sub => sub.id}
-        renderItem={renderSubKpi}
+        keyExtractor={(sub) => sub.subKpiId.toString()}
+        renderItem={({ item: sk }) => (
+          <View style={ss.subRow}>
+            <Text>
+              {sk.subKpiName} — {sk.weight}%
+            </Text>
+          </View>
+        )}
       />
     </View>
   );
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: "#EDF4EE" }}>
+    <ScrollView style={{ flex: 1, backgroundColor: "#EDF4EE", paddingBottom: 20 }}>
+      {/* Session & Employee Type */}
+      <View style={ss.card}>
+        <Text style={ss.cardTitle}>Select Session & Employee Type</Text>
 
-      {/* HEADER */}
-      <View style={ss.header}>
-        <View>
-          <Text style={ss.headerTitle}>Add KPI</Text>
-          <Text style={ss.headerSubtitle}>Head Of Department</Text>
-        </View>
-        <View style={ss.logoheader}>
-          <Image
-            source={require("../../Assets/BIIT_logo.png")}
-            style={ss.logo}
-            resizeMode="contain"
-          />
-        </View>
+        <Text style={ss.label}>Session</Text>
+        <Dropdown
+          style={ss.dropdown}
+          data={sessions.map((s) => ({ label: s.name, value: s.id }))}
+          labelField="label"
+          valueField="value"
+          placeholder="Select Session"
+          value={selectedSession}
+          onChange={(item) => setSelectedSession(item.value)}
+        />
+
+        <Text style={ss.label}>Employee Type</Text>
+        <Dropdown
+          style={ss.dropdown}
+          data={employeeTypes}
+          labelField="label"
+          valueField="value"
+          placeholder="Select Employee Type"
+          value={selectedEmpType}
+          onChange={(item) => setSelectedEmpType(item.value)}
+        />
       </View>
 
-      {/* FORM CARD */}
+      {/* KPI Form */}
       <View style={ss.card}>
         <Text style={ss.cardTitle}>
           {showSubSection ? `Create KPI: ${kpiName}` : "Create New KPI"}
         </Text>
 
-        <Text style={ss.label}>Select KPI Category Type</Text>
-        <Dropdown
-          style={ss.dropdown}
-          data={kpiTypes}
-          labelField="label"
-          valueField="value"
-          placeholder="Select Category Type"
-          value={selectedCategory}
-          onChange={item => setSelectedCategory(item.value)}
-        />
-
         <Text style={ss.label}>KPI Name</Text>
         <TextInput
           style={ss.dropdown}
           placeholder="e.g: Academics"
-          placeholderTextColor={'black'}
           value={kpiName}
           onChangeText={setKpiName}
         />
@@ -141,9 +212,8 @@ const AddKPI = () => {
         <Text style={ss.label}>KPI Weight (%)</Text>
         <TextInput
           style={ss.dropdown}
-          keyboardType="numeric"
-          placeholderTextColor={'black'}
           placeholder="e.g: 80"
+          keyboardType="numeric"
           value={kpiWeight}
           onChangeText={setKpiWeight}
         />
@@ -160,26 +230,21 @@ const AddKPI = () => {
         {showSubSection && (
           <>
             <View style={ss.divider} />
-
             <Text style={ss.label}>Sub-KPI Name</Text>
             <TextInput
               style={ss.dropdown}
-              placeholderTextColor={'black'}
               placeholder="e.g: Peer Evaluation"
               value={subName}
               onChangeText={setSubName}
             />
-
             <Text style={ss.label}>Weight (%)</Text>
             <TextInput
               style={ss.dropdown}
               keyboardType="numeric"
-              placeholderTextColor={'black'}
               placeholder="e.g: 20"
               value={subWeight}
               onChangeText={setSubWeight}
             />
-
             <TouchableOpacity style={ss.addSubBtn} onPress={addSubKpi}>
               <Text style={{ color: "#0F9D58", fontWeight: "600" }}>
                 + Add Sub-KPI
@@ -193,10 +258,9 @@ const AddKPI = () => {
                   Total: {subKpis.reduce((a, b) => a + Number(b.weight), 0)}%
                 </Text>
               </View>
-
               <FlatList
                 data={subKpis}
-                keyExtractor={item => item.id}
+                keyExtractor={(item) => item.id}
                 renderItem={renderSubKpi}
               />
             </View>
@@ -208,47 +272,24 @@ const AddKPI = () => {
         )}
       </View>
 
-      {/* KPI CATEGORIES LIST */}
+      {/* Saved KPIs */}
       {savedKpis.length > 0 && (
         <View style={{ margin: 15 }}>
-          <Text style={ss.sectionTitle}>KPI Categories</Text>
-
+          <Text style={ss.sectionTitle}>Saved KPI Categories</Text>
           <FlatList
             data={savedKpis}
-            keyExtractor={item => item.id}
+            keyExtractor={(item) => item.kpiId.toString()}
             renderItem={renderKpiCard}
           />
         </View>
       )}
-
     </ScrollView>
   );
 };
 
 export default AddKPI;
 
-/* ---------------- STYLES ---------------- */
-
 const ss = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    padding: 14,
-    backgroundColor: "#fff",
-    elevation: 3,
-  },
-  headerTitle: { fontSize: 26, fontWeight: "700" },
-  headerSubtitle: { fontSize: 12, color: "#777" },
-  logoheader: {
-    backgroundColor: "#eafaf1",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logo: { width: 40, height: 40 },
-
   card: {
     margin: 15,
     padding: 20,
@@ -257,11 +298,10 @@ const ss = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#4CAF50",
   },
-  cardTitle: { fontSize: 20, fontWeight: "500" },
+  cardTitle: { fontSize: 20, fontWeight: "500", marginBottom: 10 },
   label: { marginTop: 16 },
-
   dropdown: {
-    height: 40,
+    height: 45,
     borderWidth: 1,
     borderColor: "#4CAF50",
     borderRadius: 10,
@@ -269,7 +309,6 @@ const ss = StyleSheet.create({
     marginTop: 6,
     backgroundColor: "#F9F9F9",
   },
-
   button: {
     height: 50,
     backgroundColor: "#0F9D58",
@@ -279,9 +318,7 @@ const ss = StyleSheet.create({
     marginTop: 15,
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-
   divider: { height: 1, backgroundColor: "#cceedd", marginVertical: 15 },
-
   addSubBtn: {
     borderWidth: 1,
     borderColor: "#0F9D58",
@@ -291,21 +328,18 @@ const ss = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-
   subBox: {
     backgroundColor: "#eafaf1",
     borderRadius: 12,
     padding: 12,
     marginTop: 15,
   },
-
   subRow: {
     backgroundColor: "#fff",
     padding: 10,
     borderRadius: 10,
     marginTop: 8,
   },
-
   saveBtn: {
     height: 50,
     backgroundColor: "#0F9D58",
@@ -314,13 +348,11 @@ const ss = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
     marginBottom: 10,
   },
-
   categoryCard: {
     backgroundColor: "#eafaf1",
     borderRadius: 12,
@@ -329,12 +361,11 @@ const ss = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#4CAF50",
   },
-
   kpiTitle: { fontSize: 16, fontWeight: "600" },
   subText: { color: "#555", marginVertical: 6 },
-
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
 });
+

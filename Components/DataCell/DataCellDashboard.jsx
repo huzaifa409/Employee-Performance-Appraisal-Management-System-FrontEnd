@@ -2,7 +2,14 @@ import React from "react";
 import { View,Text,StyleSheet,Image,TouchableOpacity,ScrollView,} from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const DcDashboard = ({navigation}) => {
+const DcDashboard = ({navigation,route}) => {
+
+
+   const { onLogout } = route.params;
+
+  const handleLogout = () => {
+    onLogout(); 
+  };
   return (
     <ScrollView>
 
@@ -103,7 +110,7 @@ const DcDashboard = ({navigation}) => {
       </TouchableOpacity>
 
       
-      <TouchableOpacity style={ss.logoutButton}>
+      <TouchableOpacity style={ss.logoutButton} onPress={handleLogout}>
         <Text style={ss.logoutText}>Logout</Text>
       </TouchableOpacity>
 
@@ -205,7 +212,7 @@ const ss = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: "center",
-    backgroundColor: "#1E7F4D",
+    backgroundColor: "#D64545",
     elevation: 4,
   },
 
