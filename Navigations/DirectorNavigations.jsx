@@ -8,6 +8,7 @@ import ConfidentialEvaluation from "../Components/Director/ConfidentialEvaluatio
 import PeerEvaluator from "../Components/Director/PeerEvaluators";
 import SeePerformance from "../Components/Director/SeePerformance";
 
+
 const Stack = createNativeStackNavigator();
 
 const DirectorNavigation = ({ onLogout }) => {
@@ -44,6 +45,7 @@ const DirectorNavigation = ({ onLogout }) => {
         component={SeePerformance}
         options={{ headerShown: false }}
       />
+
     </Stack.Navigator>
   );
 };

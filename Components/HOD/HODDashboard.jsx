@@ -30,14 +30,13 @@ const HodDashboard = ({ navigation, route }) => {
         </View>
       </View>
 
-      {/* GREEN INFO BAR */}
       <View style={ss.infoBar}>
         <Text style={ss.infoText}>
           Monitor Teacher Performance, Manage KPIs and assign Peer Evaluator
         </Text>
       </View>
 
-      {/* TOP STAT BOXES */}
+      
 
       <View style={ss.statRow}>
 
