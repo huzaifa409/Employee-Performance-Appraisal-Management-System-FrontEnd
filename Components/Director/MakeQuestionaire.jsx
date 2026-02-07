@@ -14,7 +14,7 @@ import BASE_URL from "../../API-URL/API";
 
 
 
-const MakeQuestionaire=()=>
+const MakeQuestionaire=({navigation})=>
 {
 
      return (
@@ -39,7 +39,7 @@ const MakeQuestionaire=()=>
        <View style={{backgroundColor:'green'}}>
            <View style={{flexDirection:"row",paddingVertical:10,paddingHorizontal:5,justifyContent:'space-between',alignItems:"center"}}>
               <Text style={{color:"#ffff",fontSize:15,justifyContent:"center"}}>2 Questionaire Available</Text>
-              <TouchableOpacity style={{backgroundColor:"#ffff",borderRadius:7,padding:5,marginHorizontal:5}}>
+              <TouchableOpacity style={ss.button} onPress={()=>navigation.navigate("CreateEvaluationQuestionaire")}>
                 <Text>+ Create New</Text>
               </TouchableOpacity>
            </View>
@@ -73,6 +73,8 @@ const ss = StyleSheet.create({
   logo: { width: 34, height: 34, resizeMode: "contain" },
   headerTitle: { fontWeight: "700", fontSize: 16 },
   headerSubtitle: { fontSize: 12, color: "#666",paddingTop:3},
+  button:
+  {backgroundColor:"#ffff",borderRadius:7,padding:5,marginHorizontal:5}
 });
 
 export default MakeQuestionaire;

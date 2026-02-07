@@ -7,7 +7,7 @@ import Addkpi from "../Components/Director/AppKpi";
 import ConfidentialEvaluation from "../Components/Director/ConfidentialEvaluation";
 import PeerEvaluator from "../Components/Director/PeerEvaluators";
 import SeePerformance from "../Components/Director/SeePerformance";
-
+import CreateEvaluationQuestionaire from "../Components/Director/CreateEvaluationQuestionaire"
 
 const Stack = createNativeStackNavigator();
 
@@ -43,6 +43,11 @@ const DirectorNavigation = ({ onLogout }) => {
       <Stack.Screen
         name="SeePerformance"
         component={SeePerformance}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CreateEvaluationQuestionaire"
+        component={CreateEvaluationQuestionaire}
         options={{ headerShown: false }}
       />
 
