@@ -25,20 +25,20 @@ const CreateEvaluationQuestionaire = () => {
 
     const [selectedEvalTypeText, setSelectedEvalTypeText] = useState(null);
 
-    // ✅ selected dropdown value
+   
     const [selectedEvalType, setSelectedEvalType] = useState(null);
 
-    // ✅ textbox state
+    
     const [questionText, setQuestionText] = useState("");
 
-    // ✅ list of questions
+   
     const [questions, setQuestions] = useState([]);
 
-    // ✅ which index is being edited
+   
     const [editIndex, setEditIndex] = useState(null);
 
 
-    // ✅ add or update question
+  
     const handleAddQuestion = () => {
         if (!questionText.trim()) return;
 
@@ -55,7 +55,7 @@ const CreateEvaluationQuestionaire = () => {
     };
 
 
-    // ✅ delete question
+    
     const handleDelete = (index) => {
         const updated = questions.filter((_, i) => i !== index);
         setQuestions(updated);
@@ -67,7 +67,7 @@ const CreateEvaluationQuestionaire = () => {
     };
 
 
-    // ✅ edit question
+    
     const handleEdit = (index) => {
         setQuestionText(questions[index]);
         setEditIndex(index);
@@ -94,7 +94,7 @@ const CreateEvaluationQuestionaire = () => {
 
     try {
         const response = await fetch(
-            "http://192.168.10.6/FYP/api/Questionnaire/Create",
+            `${BASE_URL}/Questionnaire/Create`,
             {
                 method: "POST",
                 headers: {
@@ -107,24 +107,24 @@ const CreateEvaluationQuestionaire = () => {
         if (!response.ok) {
             const errorText = await response.text();
             console.log("API Error:", errorText);
-            alert("Error saving questionnaire ❌");
+            alert("Error saving questionnaire ");
             return;
         }
 
         await response.json();
 
-        alert("Questionnaire saved successfully ✅");
+        alert("Questionnaire saved successfully ");
 
-        // ✅ CLEAR SCREEN AFTER SAVE
-        setQuestions([]);               // removes question cards
-        setQuestionText("");            // clears input
-        setSelectedEvalType(null);       // resets dropdown value
-        setSelectedEvalTypeText(null);   // resets type text
+       
+        setQuestions([]);               
+        setQuestionText("");            
+        setSelectedEvalType(null);
+        setSelectedEvalTypeText(null);   
         setEditIndex(null);
 
     } catch (error) {
         console.log("Network Error:", error);
-        alert("Network error ❌");
+        alert("Network error ");
     }
 };
 
@@ -133,10 +133,10 @@ const CreateEvaluationQuestionaire = () => {
     return (
         <View style={{ flex: 1, backgroundColor: "#f3f6f4" }}>
 
-            {/* SCROLLABLE CONTENT */}
+           
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
 
-                {/* HEADER */}
+              
                 <View style={ss.header}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <View style={ss.logoCircle}>
@@ -156,14 +156,14 @@ const CreateEvaluationQuestionaire = () => {
                     </View>
                 </View>
 
-                {/* INFO */}
+              
                 <View style={ss.infoBox}>
                     <Text style={ss.infoText}>
                         Create Custom Evaluation Forms For Your Institution
                     </Text>
                 </View>
 
-                {/* DROPDOWN */}
+               
                 <View style={{ padding: 15 }}>
                     <Text style={ss.sectionTitle}>Select Evaluation Type</Text>
 
@@ -182,7 +182,7 @@ const CreateEvaluationQuestionaire = () => {
 
                 </View>
 
-                {/* QUESTION INPUT */}
+                
                 <View style={{ paddingHorizontal: 15 }}>
                     <Text style={ss.sectionTitle}>Enter Question</Text>
 
@@ -202,7 +202,7 @@ const CreateEvaluationQuestionaire = () => {
                     </View>
                 </View>
 
-                {/* QUESTION LIST */}
+                
                 <View style={{ paddingHorizontal: 15, marginTop: 15 }}>
                     <Text style={ss.sectionTitle}>
                         Questions Added ({questions.length})
@@ -239,7 +239,6 @@ const CreateEvaluationQuestionaire = () => {
             </ScrollView>
 
 
-            {/* ✅ FIXED BOTTOM SAVE BUTTON */}
             <View style={ss.bottomBar}>
                 <TouchableOpacity style={ss.saveBtn} onPress={handleSave}>
                     <Text style={ss.saveBtnText}>
