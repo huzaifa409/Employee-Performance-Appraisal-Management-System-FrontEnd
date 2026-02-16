@@ -1,9 +1,19 @@
-import React from "react";
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Alert
+} from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import BASE_URL from "../../API-URL/API";
 
-const TeacherDashboard = ({navigation}) => {
+const TeacherDashboard = ({ navigation, userId, onLogout }) => {
+
+  console.log(userId)
 
   const kpiData = [
     { value: 80, label: "Peer" },
@@ -13,6 +23,72 @@ const TeacherDashboard = ({navigation}) => {
     { value: 78, label: "Society" },
     { value: 88, label: "Admin" },
   ];
+
+  const [flag, setFlag] = useState(0);
+  const [evaluationType, setEvaluationType] = useState("");
+
+  useEffect(() => {
+    fetchActiveQuestionnaire();
+  }, []);
+
+
+  const checkEvaluatorAndProceed = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/IsEvaluator?userId=${userId}`
+      );
+
+      const data = await response.json();
+
+      if (!data.isEvaluator) {
+        Alert.alert(
+          "Access Denied",
+          "You are not an evaluator and cannot perform peer evaluation"
+        );
+        return;
+      }
+
+      // ✅ evaluator → proceed
+      navigation.navigate("TeachersCoursesScreen", {
+        evaluatorID: userId,
+      });
+
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Unable to verify evaluator status");
+    }
+  };
+
+
+ const fetchActiveQuestionnaire = async () => {
+  try {
+    const type = "peer evaluation";
+
+    const response = await fetch(
+      `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${encodeURIComponent(type)}`
+    );
+
+    const data = await response.json();
+    console.log("API RESPONSE:", data);
+
+    // ✅ Ensure flag is treated as string and type trimmed + lowercased
+    if (
+      String(data?.Flag) === "1" &&
+      data?.Type?.trim().toLowerCase() === type.toLowerCase()
+    ) {
+      setFlag(1);
+      setEvaluationType(data.Type);
+    } else {
+      setFlag(0);
+      setEvaluationType("");
+    }
+  } catch (error) {
+    console.error("API ERROR:", error);
+    setFlag(0);
+  }
+};
+
+
 
   return (
     <ScrollView style={styles.container}>
@@ -29,6 +105,35 @@ const TeacherDashboard = ({navigation}) => {
         <Text style={styles.bannerText}>
           Monitor your teaching performance and manage course materials.
         </Text>
+      </View>
+
+      {/* START PEER EVALUATION BUTTON */}
+      <View>
+        <TouchableOpacity
+          disabled={flag !== 1}
+          style={{
+            padding: 10,
+            margin: 10,
+            backgroundColor: flag === 1 ? "#249551" : "#B0B0B0",
+            borderRadius: 7,
+            opacity: flag === 1 ? 1 : 0.6,
+          }}
+          onPress={() => {
+            if (flag === 1) {
+              checkEvaluatorAndProceed();
+            }
+          }}
+        >
+          <Text style={{ textAlign: "center", color: "#fff", fontWeight: "bold" }}>
+            Start Peer Evaluation
+          </Text>
+        </TouchableOpacity>
+
+        {flag === 0 && (
+          <Text style={{ textAlign: "center", fontSize: 12, color: "#777" }}>
+            Peer Evaluation is currently not active
+          </Text>
+        )}
       </View>
 
       {/* KPI */}
@@ -54,63 +159,56 @@ const TeacherDashboard = ({navigation}) => {
       <Text style={styles.score}>89%</Text>
       <Text style={styles.scoreLabel}>Overall Performance Score</Text>
 
-      {/* ================== PERFORMANCE VIEWS ================== */}
-
+      {/* PERFORMANCE SECTIONS */}
       <Text style={styles.sectionTitle}>Performance Sections</Text>
 
-      {/* CHR */}
-      <TouchableOpacity style={[styles.block, styles.blockGreen]} onPress={()=>{navigation.navigate("ClassHeldReportScreen")}}>
+      <TouchableOpacity
+        style={[styles.block, styles.blockGreen]}
+        onPress={() => navigation.navigate("ClassHeldReportScreen")}
+      >
         <View style={[styles.iconBox, { backgroundColor: "#7c3aed" }]}>
           <Icon name="event-available" size={24} color="#fff" />
         </View>
-
         <View style={{ flex: 1 }}>
           <Text style={styles.blockTitle}>Class Held Report</Text>
           <Text style={styles.blockDesc}>View your CHR performance</Text>
         </View>
-
         <Icon name="chevron-right" size={26} color="#7c3aed" />
       </TouchableOpacity>
 
-      {/* Course */}
-      <TouchableOpacity style={[styles.block, styles.blockPurple]} onPress={()=>{navigation.navigate("CourseManagementEvaluationScreen")}}>
+      <TouchableOpacity
+        style={[styles.block, styles.blockPurple]}
+        onPress={() => navigation.navigate("CourseManagementEvaluationScreen")}
+      >
         <View style={[styles.iconBox, { backgroundColor: "#16a34a" }]}>
           <Icon name="menu-book" size={24} color="#fff" />
         </View>
-
         <View style={{ flex: 1 }}>
           <Text style={styles.blockTitle}>Course Management</Text>
           <Text style={styles.blockDesc}>Check course evaluation</Text>
         </View>
-
         <Icon name="chevron-right" size={26} color="#16a34a" />
       </TouchableOpacity>
 
-      {/* Society */}
       <TouchableOpacity style={[styles.block, styles.blockBlue]}>
         <View style={[styles.iconBox, { backgroundColor: "#2563eb" }]}>
           <Icon name="groups" size={24} color="#fff" />
         </View>
-
         <View style={{ flex: 1 }}>
           <Text style={styles.blockTitle}>Society Mentors</Text>
           <Text style={styles.blockDesc}>Evaluate society mentors</Text>
         </View>
-
         <Icon name="chevron-right" size={26} color="#2563eb" />
       </TouchableOpacity>
 
-      {/* Performance */}
       <TouchableOpacity style={[styles.block, styles.blockOrange]}>
         <View style={[styles.iconBox, { backgroundColor: "#ea580c" }]}>
           <Icon name="analytics" size={24} color="#fff" />
         </View>
-
         <View style={{ flex: 1 }}>
           <Text style={styles.blockTitle}>See Performance</Text>
           <Text style={styles.blockDesc}>View performance analytics</Text>
         </View>
-
         <Icon name="chevron-right" size={26} color="#ea580c" />
       </TouchableOpacity>
 
@@ -121,19 +219,16 @@ const TeacherDashboard = ({navigation}) => {
       </TouchableOpacity>
 
       <View style={{ height: 40 }} />
-
     </ScrollView>
   );
 };
 
 export default TeacherDashboard;
 
-const styles = StyleSheet.create({
+/* ===================== STYLES ===================== */
 
-  container: {
-    flex: 1,
-    backgroundColor: "#f3f6f4",
-  },
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#f3f6f4" },
 
   header: { padding: 18 },
 
@@ -193,8 +288,6 @@ const styles = StyleSheet.create({
     color: "#666",
   },
 
-  /* ========= ATTRACTIVE BLOCKS ========= */
-
   block: {
     flexDirection: "row",
     alignItems: "center",
@@ -203,33 +296,13 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 18,
     borderWidth: 1.5,
-
     elevation: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
 
-  blockGreen: {
-    backgroundColor: "#faf5ff",
-    borderColor: "#e9d5ff",
-  },
-
-  blockPurple: {
-    backgroundColor: "#f0fdf4",
-    borderColor: "#bbf7d0",
-  },
-
-  blockBlue: {
-    backgroundColor: "#eff6ff",
-    borderColor: "#bfdbfe",
-  },
-
-  blockOrange: {
-    backgroundColor: "#fff7ed",
-    borderColor: "#fed7aa",
-  },
+  blockGreen: { backgroundColor: "#faf5ff", borderColor: "#e9d5ff" },
+  blockPurple: { backgroundColor: "#f0fdf4", borderColor: "#bbf7d0" },
+  blockBlue: { backgroundColor: "#eff6ff", borderColor: "#bfdbfe" },
+  blockOrange: { backgroundColor: "#fff7ed", borderColor: "#fed7aa" },
 
   iconBox: {
     width: 52,
@@ -240,24 +313,14 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
 
-  blockTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  blockDesc: {
-    fontSize: 12,
-    color: "#666",
-    marginTop: 4,
-  },
+  blockTitle: { fontSize: 15, fontWeight: "700" },
+  blockDesc: { fontSize: 12, color: "#666", marginTop: 4 },
 
   logout: {
     marginHorizontal: 16,
     marginTop: 24,
     padding: 14,
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#fecaca",
     backgroundColor: "#166534",
     flexDirection: "row",
     justifyContent: "center",
@@ -265,8 +328,5 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-  logoutText: {
-    color: "#fff",
-    fontWeight: "700",
-  },
+  logoutText: { color: "#fff", fontWeight: "700" },
 });

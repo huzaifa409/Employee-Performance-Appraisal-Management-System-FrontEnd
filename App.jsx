@@ -1,25 +1,60 @@
 import React, { useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
+
 import Login from "./Components/Login/Login";
 import DataCellNavigation from "./Navigations/DataCellNavigations";
 import HODNavigation from "./Navigations/HODNavigations";
 import DirectorNavigation from "./Navigations/DirectorNavigations";
-import TeacherNavigation from "./Navigations/TeacherNavigations"
-import CreateEvaluationQuestionaire from "./Components/Director/CreateEvaluationQuestionaire";
+import TeacherNavigation from "./Navigations/TeacherNavigations";
+import StudentNavigation from "./Navigations/StudentNavigation";
 
 export default function App() {
-  const [role, setRole] = useState(null);
+  const [user, setUser] = useState(null);
 
   return (
     <NavigationContainer>
-      {!role && <Login onLogin={(newRole) => setRole(newRole)} />}
+      {!user && (
+        <Login
+          onLogin={(role, userId) =>
+            setUser({ role, userId })
+          }
+        />
+      )}
 
-      {role === "DATACELL" && <DataCellNavigation onLogout={() => setRole(null)} />}
-      {role === "HOD" && <HODNavigation onLogout={() => setRole(null)} />}
-      {role === "DIRECTOR" && <DirectorNavigation onLogout={() => setRole(null)} />}
-      {role === "TEACHER" && <TeacherNavigation onLogout={() => setRole(null)} />}
+      {user?.role === "DATACELL" && (
+        <DataCellNavigation
+          userId={user.userId}
+          onLogout={() => setUser(null)}
+        />
+      )}
+
+      {user?.role === "HOD" && (
+        <HODNavigation
+          userId={user.userId}
+          onLogout={() => setUser(null)}
+        />
+      )}
+
+      {user?.role === "DIRECTOR" && (
+        <DirectorNavigation
+          userId={user.userId}
+          onLogout={() => setUser(null)}
+        />
+      )}
+
+      {user?.role === "TEACHER" && (
+        <TeacherNavigation
+          userId={user.userId}
+          onLogout={() => setUser(null)}
+        />
+      )}
+
+      {user?.role === "STUDENT" && (
+        <StudentNavigation
+          userId={user.userId}
+          onLogout={() => setUser(null)}
+        />
+      )}
     </NavigationContainer>
-
-    // <CreateEvaluationQuestionaire/>
   );
 }

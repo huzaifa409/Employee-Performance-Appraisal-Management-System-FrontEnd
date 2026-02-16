@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity,Alert } from 'react-native'
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Alert } from 'react-native'
 import BASE_URL from "../../API-URL/API";
-const Login = ({onLogin}) => {
+const Login = ({ onLogin }) => {
 
 
     const [username, setUsername] = useState("");
@@ -29,12 +29,11 @@ const Login = ({onLogin}) => {
 
             const data = await response.json();
 
-          
-               if (onLogin)
-                { 
-                    onLogin(data.role.toUpperCase());
 
-                }
+            onLogin(
+                data.role.toUpperCase(),
+                Number(data.userId)
+            );
 
 
             Alert.alert("Success", data.message);
