@@ -5,15 +5,18 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert
+  Alert,
 } from "react-native";
 import { BarChart } from "react-native-gifted-charts";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
 
 const TeacherDashboard = ({ navigation, userId, onLogout }) => {
+  const [flag, setFlag] = useState(0);
+  const [evaluationType, setEvaluationType] = useState("");
+  const [teacherName, setTeacherName] = useState("");
 
-  console.log(userId)
+  console.log("Teacher UserID:", userId);
 
   const kpiData = [
     { value: 80, label: "Peer" },
@@ -24,82 +27,103 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
     { value: 88, label: "Admin" },
   ];
 
-  const [flag, setFlag] = useState(0);
-  const [evaluationType, setEvaluationType] = useState("");
-
-  useEffect(() => {
-    fetchActiveQuestionnaire();
-  }, []);
-
-
-  const checkEvaluatorAndProceed = async () => {
+  /* ================= FETCH TEACHER NAME ================= */
+  const fetchTeacherName = async () => {
     try {
       const response = await fetch(
-        `${BASE_URL}/TeacherDashboard/IsEvaluator?userId=${userId}`
+        `${BASE_URL}/TeacherDashboard/GetTeacherName/${userId}`
       );
 
-      const data = await response.json();
-
-      if (!data.isEvaluator) {
-        Alert.alert(
-          "Access Denied",
-          "You are not an evaluator and cannot perform peer evaluation"
-        );
-        return;
+      if (!response.ok) {
+        throw new Error("Failed to fetch teacher name");
       }
 
-      // ✅ evaluator → proceed
-      navigation.navigate("TeachersCoursesScreen", {
-        evaluatorID: userId,
-      });
-
+      const name = await response.json();
+      setTeacherName(name);
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Unable to verify evaluator status");
+      console.error("Teacher name fetch error:", error);
+      setTeacherName("Teacher");
     }
   };
 
-
- const fetchActiveQuestionnaire = async () => {
+  /* ================= CHECK EVALUATOR ================= */
+  /* ================= CHECK EVALUATOR AND FETCH PEEREVALUATOR ID ================= */
+/* ================= CHECK EVALUATOR AND FETCH PEEREVALUATOR ID ================= */
+const checkEvaluatorAndProceed = async () => {
   try {
-    const type = "peer evaluation";
-
     const response = await fetch(
-      `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${encodeURIComponent(type)}`
+      `${BASE_URL}/TeacherDashboard/GetPeerEvaluatorID?userId=${userId}`
     );
 
     const data = await response.json();
-    console.log("API RESPONSE:", data);
 
-    // ✅ Ensure flag is treated as string and type trimmed + lowercased
-    if (
-      String(data?.Flag) === "1" &&
-      data?.Type?.trim().toLowerCase() === type.toLowerCase()
-    ) {
-      setFlag(1);
-      setEvaluationType(data.Type);
-    } else {
-      setFlag(0);
-      setEvaluationType("");
+    if (!data?.peerEvaluatorID) {
+      Alert.alert(
+        "Access Denied",
+        "You are not an evaluator and cannot perform peer evaluation"
+      );
+      return;
     }
+
+    // Send peerEvaluatorID to the next screen
+    navigation.navigate("TeachersCoursesScreen", {
+      evaluatorID: data.peerEvaluatorID, // This is the PeerEvaluator.id now
+    });
   } catch (error) {
-    console.error("API ERROR:", error);
-    setFlag(0);
+    console.error(error);
+    Alert.alert("Error", "Unable to verify evaluator status");
   }
 };
 
 
 
+  /* ================= FETCH ACTIVE QUESTIONNAIRE ================= */
+  const fetchActiveQuestionnaire = async () => {
+    try {
+      const type = "peer evaluation";
+
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${encodeURIComponent(
+          type
+        )}`
+      );
+
+      const data = await response.json();
+
+      if (
+        String(data?.Flag) === "1" &&
+        data?.Type?.trim().toLowerCase() === type.toLowerCase()
+      ) {
+        setFlag(1);
+        setEvaluationType(data.Type);
+      } else {
+        setFlag(0);
+        setEvaluationType("");
+      }
+    } catch (error) {
+      console.error("API ERROR:", error);
+      setFlag(0);
+    }
+  };
+
+  /* ================= INITIAL LOAD ================= */
+  useEffect(() => {
+    fetchTeacherName();
+    fetchActiveQuestionnaire();
+  }, []);
+
   return (
     <ScrollView style={styles.container}>
-
-      {/* Header */}
+      {/* ================= HEADER ================= */}
       <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome, Teacher 👋</Text>
-        <Text style={styles.sub}>Your Performance Overview — Fall 2025</Text>
+        <Text style={styles.welcome}>Welcome back 👋</Text>
+        <Text style={styles.teacherName}>{teacherName}</Text>
+        <Text style={styles.sub}>
+          Your Performance Overview — Fall 2025
+        </Text>
       </View>
 
-      {/* Banner */}
+      {/* ================= BANNER ================= */}
       <View style={styles.banner}>
         <Icon name="insights" size={18} color="white" />
         <Text style={styles.bannerText}>
@@ -107,7 +131,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         </Text>
       </View>
 
-      {/* START PEER EVALUATION BUTTON */}
+      {/* ================= PEER EVALUATION BUTTON ================= */}
       <View>
         <TouchableOpacity
           disabled={flag !== 1}
@@ -124,7 +148,9 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
             }
           }}
         >
-          <Text style={{ textAlign: "center", color: "#fff", fontWeight: "bold" }}>
+          <Text
+            style={{ textAlign: "center", color: "#fff", fontWeight: "bold" }}
+          >
             Start Peer Evaluation
           </Text>
         </TouchableOpacity>
@@ -136,7 +162,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         )}
       </View>
 
-      {/* KPI */}
+      {/* ================= KPI SECTION ================= */}
       <Text style={styles.sectionTitle}>KPI Metrics Overview</Text>
       <Text style={styles.sectionSub}>
         Your performance across KPI categories
@@ -159,7 +185,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
       <Text style={styles.score}>89%</Text>
       <Text style={styles.scoreLabel}>Overall Performance Score</Text>
 
-      {/* PERFORMANCE SECTIONS */}
+      {/* ================= PERFORMANCE BLOCKS ================= */}
       <Text style={styles.sectionTitle}>Performance Sections</Text>
 
       <TouchableOpacity
@@ -212,8 +238,8 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         <Icon name="chevron-right" size={26} color="#ea580c" />
       </TouchableOpacity>
 
-      {/* Logout */}
-      <TouchableOpacity style={styles.logout}>
+      {/* ================= LOGOUT ================= */}
+      <TouchableOpacity style={styles.logout} onPress={onLogout}>
         <Icon name="logout" size={18} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
@@ -233,9 +259,17 @@ const styles = StyleSheet.create({
   header: { padding: 18 },
 
   welcome: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#166534",
+  },
+
+  teacherName: {
+    fontSize: 22,
+    fontWeight: "800",
     color: "#14532d",
+    letterSpacing: 0.4,
+    marginTop: 2,
   },
 
   sub: { marginTop: 4, color: "#666" },

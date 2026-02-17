@@ -32,7 +32,7 @@ const Login = ({ onLogin }) => {
 
             onLogin(
                 data.role.toUpperCase(),
-                Number(data.userId)
+                data.userId
             );
 
 

@@ -16,10 +16,10 @@ const CreateEvaluationQuestionaire = () => {
 
     // ✅ dropdown data
     const [EvalTypes, setEvalTypes] = useState([
-        { label: "Teacher Evaluation", value: 1, typeText: "Teacher Evaluation" },
+        { label: "Confidential Evaluation", value: 1, typeText: "Confidential Evaluation" },
         { label: "Course Evaluation", value: 2, typeText: "Course Evaluation" },
         { label: "Peer Evaluation", value: 3, typeText: "Peer Evaluation" },
-        { label: "Lab Evaluation", value: 4, typeText: "Lab Evaluation" },
+        { label: "Student Evaluation", value: 4, typeText: "Student Evaluation" },
     ]);
 
 
