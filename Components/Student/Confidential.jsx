@@ -54,6 +54,7 @@ const Confidential = ({ route, navigation }) => {
             enrollmentID: item.EnrollmentID,
             courseCode: item.CourseCode,
             teacherID: item.TeacherID,
+            studentId: studentId,
           })
         }
       >

@@ -168,6 +168,14 @@ const AddKPI = () => {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: "#EDF4EE", paddingBottom: 20 }}>
+
+      {/* HEADER */}
+      <View style={ss.headerBox}>
+        <Text style={ss.headerTitle}>ADD NEW KPI</Text>
+        <Text style={ss.headerSub}>
+          Define KPI categories and assign weights
+        </Text>
+      </View>
       {/* Session & Employee Type */}
       <View style={ss.card}>
         <Text style={ss.cardTitle}>Select Session & Employee Type</Text>
@@ -290,13 +298,39 @@ const AddKPI = () => {
 export default AddKPI;
 
 const ss = StyleSheet.create({
+
+  headerBox: {
+    backgroundColor: "#0F9D58",
+    paddingVertical: 25,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    marginBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontWeight: "700",
+    color: "#fff",
+    textAlign: "center",
+  },
+  headerSub: {
+    marginTop: 6,
+    fontSize: 14,
+    color: "#eafff3",
+    textAlign: "center",
+  },
   card: {
     margin: 15,
     padding: 20,
-    borderRadius: 10,
+    borderRadius: 14,
     backgroundColor: "#fff",
     borderWidth: 1,
     borderColor: "#4CAF50",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+
   },
   cardTitle: { fontSize: 20, fontWeight: "500", marginBottom: 10 },
   label: { marginTop: 16 },

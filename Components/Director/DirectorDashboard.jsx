@@ -9,9 +9,9 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const DirectorDashboard = ({ navigation, route}) => {
+const DirectorDashboard = ({ navigation, route }) => {
   // Always ensure onLogout is a valid function
-const { onLogout } = route.params;
+  const { onLogout } = route.params;
 
   const handleLogout = () => {
     onLogout();
@@ -126,6 +126,24 @@ const { onLogout } = route.params;
           <Text style={ss.rowDesc}>Assign and manage peer evaluators for teachers</Text>
         </View>
         <Icon name="chevron-right" size={26} color="#2563eb" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[ss.row, { borderColor: "#a7f3d0" }]}
+        onPress={() => navigation.navigate("EmailSettings")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: "#059669" }]}>
+          <Icon name="email" size={24} color="#fff" />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={ss.rowTitle}>Email Settings</Text>
+          <Text style={ss.rowDesc}>
+            Manage confidential evaluation recipient emails
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#059669" />
       </TouchableOpacity>
 
       <Text style={ss.quote}>
