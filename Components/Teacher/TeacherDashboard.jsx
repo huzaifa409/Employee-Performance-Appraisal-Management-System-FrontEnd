@@ -185,7 +185,7 @@ const checkEvaluatorAndProceed = async () => {
       <Text style={styles.score}>89%</Text>
       <Text style={styles.scoreLabel}>Overall Performance Score</Text>
 
-      {/* ================= PERFORMANCE BLOCKS ================= */}
+      
       <Text style={styles.sectionTitle}>Performance Sections</Text>
 
       <TouchableOpacity
@@ -227,7 +227,9 @@ const checkEvaluatorAndProceed = async () => {
         <Icon name="chevron-right" size={26} color="#2563eb" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.block, styles.blockOrange]}>
+      <TouchableOpacity style={[styles.block, styles.blockOrange]} 
+      
+       onPress={() => navigation.navigate("SeeOwnPerformance", { userId: userId })}>
         <View style={[styles.iconBox, { backgroundColor: "#ea580c" }]}>
           <Icon name="analytics" size={24} color="#fff" />
         </View>
@@ -239,7 +241,9 @@ const checkEvaluatorAndProceed = async () => {
       </TouchableOpacity>
 
       {/* ================= LOGOUT ================= */}
-      <TouchableOpacity style={styles.logout} onPress={onLogout}>
+      <TouchableOpacity style={styles.logout} 
+     
+      >
         <Icon name="logout" size={18} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>

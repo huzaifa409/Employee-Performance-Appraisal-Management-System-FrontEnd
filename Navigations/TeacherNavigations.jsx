@@ -7,6 +7,8 @@ import CourseManagementEvaluationScreen from "../Components/Teacher/CourseManage
 import ViewCHRDetails from "../Components/Teacher/ViewCHRDetails"
 import TeachersCoursesScreen from "../Components/Teacher/TeacherCourseScreen"
 import PeerEvaluationScreen from "../Components/Teacher/PeerEvaluationScreen"
+import SeeOwnPerformance from "../Components/Teacher/SeeOwnPerformance"
+
 
 
 const stack = createNativeStackNavigator();
@@ -47,6 +49,11 @@ const TeacherNavigation = ({ userId, onLogout }) => {
       <stack.Screen
         name="PeerEvaluationScreen"
         component={PeerEvaluationScreen}
+        options={{ headerShown: false }}
+      />
+      <stack.Screen
+        name="SeeOwnPerformance"
+        component={SeeOwnPerformance}
         options={{ headerShown: false }}
       />
     </stack.Navigator>
