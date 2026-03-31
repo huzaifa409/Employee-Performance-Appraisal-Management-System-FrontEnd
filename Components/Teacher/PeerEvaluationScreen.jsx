@@ -25,28 +25,28 @@ const PeerEvaluationScreen = ({ route, navigation }) => {
     fetchQuestions();
   }, []);
 
- const fetchQuestions = async () => {
-  try {
-    const type = "peer evaluation"; // match backend
+  const fetchQuestions = async () => {
+    try {
+      const type = "peer evaluation"; // match backend
 
-    const response = await fetch(
-      `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${encodeURIComponent(type)}`
-    );
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${encodeURIComponent(type)}`
+      );
 
-    const data = await response.json();
+      const data = await response.json();
 
-    if (!data?.Questions || data.Questions.length === 0) {
-      Alert.alert("Info", "No active questionnaire available.");
-      setQuestions([]);
-      return;
+      if (!data?.Questions || data.Questions.length === 0) {
+        Alert.alert("Info", "No active questionnaire available.");
+        setQuestions([]);
+        return;
+      }
+
+      setQuestions(data.Questions);
+    } catch (error) {
+      console.error("API fetchQuestions ERROR:", error);
+      Alert.alert("Error", "Unable to load questionnaire");
     }
-
-    setQuestions(data.Questions);
-  } catch (error) {
-    console.error("API fetchQuestions ERROR:", error);
-    Alert.alert("Error", "Unable to load questionnaire");
-  }
-};
+  };
 
 
   const selectOption = (questionID, score) => {
@@ -56,11 +56,11 @@ const PeerEvaluationScreen = ({ route, navigation }) => {
   const submitEvaluation = async () => {
     // Build payload for backend
     const payload = Object.keys(answers).map((qid) => ({
-      EvaluatorID: evaluatorID,
-      EvaluateeID: teacherID,
-      QuestionID: parseInt(qid),
-      CourseCode: courseCode,
-      Score: answers[qid],
+      evaluatorID: evaluatorID,
+      evaluateeID: teacherID,
+      questionID: parseInt(qid),
+      courseCode: courseCode,
+      score: answers[qid],
     }));
 
     try {

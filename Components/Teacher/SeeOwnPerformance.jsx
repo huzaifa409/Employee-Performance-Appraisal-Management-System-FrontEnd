@@ -1,209 +1,319 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
+  Alert,
+  TouchableOpacity,
+  StatusBar,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BarChart } from "react-native-gifted-charts";
+import { Dropdown } from 'react-native-element-dropdown';
+import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
 
 const { width } = Dimensions.get("window");
 
-const SeeOwnPerformance = ({ route }) => {
-    const { userId } = route.params; 
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
+const SeeOwnPerformance = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
+  const { userId, username } = route.params;
 
-    useEffect(() => {
-        fetchPerformance();
-    }, [userId]);
+  const [loading, setLoading] = useState(true);
+  const [fetchingData, setFetchingData] = useState(false); // New state for session switching
+  const [performanceData, setPerformanceData] = useState(null);
+  const [chartData, setChartData] = useState([]);
+  
+  const [sessions, setSessions] = useState([]);
+  const [selectedSessionValue, setSelectedSessionValue] = useState(null);
+  const [isFocus, setIsFocus] = useState(false);
 
-    const fetchPerformance = async () => {
-        try {
-            setLoading(true);
-            const response = await fetch(`${BASE_URL}/Performance/GetMyPerformance/${userId}`);
-            
-            // 1. Safety check: Ensure the server sent JSON and not an HTML error page
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                const textError = await response.text();
-                console.error("Server returned non-JSON. It might be a crash page:", textError);
-                throw new Error("Internal Server Error (Check Backend)");
-            }
+  useEffect(() => {
+    initialFetch();
+  }, [userId]);
 
-            const result = await response.json();
+  const initialFetch = async () => {
+    setLoading(true);
+    await fetchSessions();
+    setLoading(false);
+  };
 
-            // 2. Handle the "NotEnrolled" status specifically for users like T001
-            if (result.Status === "NotEnrolled") {
-                Alert.alert("Enrollment Required", result.Message);
-                setData(result); 
-            } else if (result.Status === "Success" || result.Status === "NoData") {
-                setData(result);
-            } else {
-                Alert.alert("Error", result.Message || "Failed to fetch performance data.");
-            }
-        } catch (error) {
-            console.error("Fetch Error:", error.message);
-            Alert.alert("Network Error", "Could not connect to the server.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/PeerEvaluator/Sessions`);
+      const result = await response.json();
+      
+      const formattedSessions = result.map(s => ({
+        label: s.name,
+        value: s.id
+      }));
 
-    if (loading) {
-        return (
-            <View style={styles.center}><ActivityIndicator size="large" color="#1E7F4D" /></View>
-        );
+      setSessions(formattedSessions);
+      
+      if (formattedSessions.length > 0) {
+        const firstSession = formattedSessions[0].value;
+        setSelectedSessionValue(firstSession);
+        fetchPerformance(firstSession); // Fetch data for the first session immediately
+      }
+    } catch (error) {
+      console.error("Session Fetch Error:", error);
+      Alert.alert("Error", "Could not load sessions.");
     }
+  };
 
-    // If no data was found at all
-    if (!data) {
-        return (
-            <View style={styles.center}>
-                <Text>No performance records available for {userId}.</Text>
-            </View>
-        );
+  const fetchPerformance = async (sessionId) => {
+    setFetchingData(true);
+    try {
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/SeeOwnPerformance?userId=${userId}&sessionId=${sessionId}`
+      );
+      const result = await response.json();
+
+      setPerformanceData(result);
+
+      // Map API data to BarChart format
+      const formattedChart = result.Kpis.map(kpi => ({
+        value: kpi.Score,
+        label: kpi.Name.split(' ')[0], // Shorten label if needed
+        frontColor: '#1E7F4D',
+        topLabelComponent: () => (
+          <Text style={{ fontSize: 10, color: '#1E7F4D', marginBottom: 4 }}>{kpi.Score}</Text>
+        ),
+      }));
+      setChartData(formattedChart);
+
+    } catch (error) {
+      console.error("Performance API Error:", error);
+      Alert.alert("Error", "Failed to fetch performance scores.");
+    } finally {
+      setFetchingData(false);
     }
+  };
 
+  if (loading) {
     return (
-        <ScrollView style={styles.container}>
-            {/* Top Info Section */}
-            <View style={styles.topInfo}>
-                <View>
-                    <Text style={styles.nameText}>{data?.TeacherName || "N/A"}</Text>
-                    <Text style={styles.idText}>ID: {data?.TeacherID} | Session: {data?.SessionName}</Text>
-                </View>
-            </View>
-
-            {/* Aggregate Score Card */}
-            <View style={styles.scoreCard}>
-                <View>
-                    <Text style={styles.analyticsLabel}>ACADEMIC ANALYTICS</Text>
-                    <Text style={styles.performanceHeading}>YOUR PERFORMANCE</Text>
-                    <Text style={styles.sessionLabel}>SESSION: {data?.SessionName?.toUpperCase()}</Text>
-                </View>
-                <View style={styles.aggregateCircle}>
-                    <Text style={styles.aggregateSub}>AGGREGATE SCORE</Text>
-                    <Text style={styles.aggregateValue}>{data?.OverallPercentage ?? 0}%</Text>
-                </View>
-            </View>
-
-            {/* Chart Section - Only show if there is chart data */}
-            {data?.ChartData?.length > 0 ? (
-                <View style={styles.chartContainer}>
-                    <Text style={styles.sectionTitle}>METRIC BREAKDOWN</Text>
-                    <Text style={styles.sectionSub}>Detailed KPI Analysis</Text>
-                    
-                    <View style={{ marginTop: 20, alignItems: 'center' }}>
-                        <BarChart
-                            data={data.ChartData}
-                            barWidth={35}
-                            noOfSections={4}
-                            maxValue={100}
-                            isAnimated
-                            roundedTop
-                            capColor={'rgba(30, 127, 77, 0.5)'}
-                            yAxisThickness={0}
-                            xAxisThickness={1}
-                            xAxisColor={'#E0E0E0'}
-                            yAxisTextStyle={{ color: '#999', fontSize: 10 }}
-                            labelTextStyle={{ color: '#444', fontSize: 10, fontWeight: 'bold' }}
-                        />
-                    </View>
-                </View>
-            ) : (
-                <View style={styles.emptyNotice}>
-                    <Text style={styles.emptyText}>No chart data to display for this session.</Text>
-                </View>
-            )}
-
-            {/* KPI Cards Grid */}
-            <View style={styles.grid}>
-                {data?.Blocks?.map((item, index) => (
-                    <View key={index} style={styles.kpiCard}>
-                        <View style={styles.cardHeader}>
-                            <Text style={styles.maxWeight}>MAX WEIGHT: {item.MaxWeight}</Text>
-                        </View>
-                        <Text style={styles.kpiTitle}>{item.Title?.toUpperCase()}</Text>
-                        <Text style={[styles.kpiValue, { color: item.Value > 50 ? '#1E7F4D' : '#D9534F' }]}>
-                            {item.Value}%
-                        </Text>
-                        <View style={styles.progressBarBg}>
-                            <View style={[styles.progressBarFill, { width: `${item.Value}%` }]} />
-                        </View>
-                    </View>
-                ))}
-            </View>
-
-            <View style={{ height: 50 }} />
-        </ScrollView>
+      <View style={[styles.center, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#1E7F4D" />
+      </View>
     );
+  }
+
+  return (
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Icon name="arrow-back" size={24} color="#1E7F4D" />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>My Performance</Text>
+          <View style={styles.userRow}>
+             <Icon name="person" size={14} color="#fff" style={{ marginRight: 4 }} />
+             <Text style={styles.headerSubtitle}>{username || "Instructor"}</Text>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+        
+        {/* Session Selector */}
+        <View style={styles.selectorContainer}>
+            <Text style={styles.selectorLabel}>Academic Session</Text>
+            <Dropdown
+              style={[styles.dropdown, isFocus && { borderColor: '#1E7F4D' }]}
+              data={sessions}
+              maxHeight={300}
+              labelField="label"
+              valueField="value"
+              value={selectedSessionValue}
+              onFocus={() => setIsFocus(true)}
+              onBlur={() => setIsFocus(false)}
+              onChange={item => {
+                setSelectedSessionValue(item.value);
+                setIsFocus(false);
+                fetchPerformance(item.value);
+              }}
+              renderLeftIcon={() => <Icon style={styles.icon} color="#1E7F4D" name="calendar-month" size={20} />}
+            />
+        </View>
+
+        {fetchingData ? (
+          <ActivityIndicator size="large" color="#1E7F4D" style={{ marginTop: 40 }} />
+        ) : performanceData ? (
+          <>
+            {/* Overall Score Card */}
+            <View style={styles.overallCard}>
+                <View style={styles.iconBox}>
+                    <Text style={styles.overallPercentText}>{performanceData.OverallPercentage}%</Text>
+                </View>
+                <View style={{ flex: 1, marginLeft: 15 }}>
+                    <Text style={styles.overallLabel}>Aggregate Performance</Text>
+                    <Text style={styles.pointsSubText}>
+                      {performanceData.ObtainedPoints} / {performanceData.TotalPoints} Obtained Points
+                    </Text>
+                </View>
+            </View>
+
+            {/* Bar Chart Section */}
+            <View style={styles.chartContainer}>
+                <Text style={styles.sectionHeading}>KPI Overview</Text>
+                <BarChart
+                  data={chartData}
+                  barWidth={35}
+                  noOfSections={4}
+                  barBorderRadius={4}
+                  frontColor="#1E7F4D"
+                  yAxisThickness={0}
+                  xAxisThickness={1}
+                  xAxisColor={'#e2e8f0'}
+                  hideRules
+                  maxValue={performanceData.Kpis[0]?.Total || 100} // Dynamic max based on first KPI total
+                />
+            </View>
+
+            {/* Detailed KPI List */}
+            <Text style={[styles.sectionHeading, { marginLeft: 20, marginTop: 20 }]}>Breakdown by Category</Text>
+            {performanceData.Kpis.map((kpi, index) => (
+              <View key={index} style={styles.kpiCard}>
+                <View style={styles.kpiHeader}>
+                  <Text style={styles.kpiName}>{kpi.Name}</Text>
+                  <Text style={styles.kpiScoreText}>{kpi.Score}/{kpi.Total}</Text>
+                </View>
+                
+                {kpi.SubKpis.map((sub, sIdx) => (
+                  <View key={sIdx} style={styles.subKpiRow}>
+                    <Text style={styles.subKpiName}>{sub.Name}</Text>
+                    <View style={styles.subKpiScoreBox}>
+                      <Text style={styles.subKpiScore}>{sub.Score}</Text>
+                      <Text style={styles.subKpiTotal}>/{sub.Total}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </>
+        ) : (
+          <View style={styles.detailsContainer}>
+              <Text style={styles.noDataText}>No performance records found for this session.</Text>
+          </View>
+        )}
+      </ScrollView>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#F9FBFA" },
-    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    topInfo: { padding: 20, backgroundColor: '#FFF' },
-    nameText: { fontSize: 20, fontWeight: 'bold', color: '#000' },
-    idText: { fontSize: 13, color: '#666', marginTop: 4 },
-    
-    scoreCard: {
-        backgroundColor: '#166534', 
-        margin: 15,
-        borderRadius: 20,
-        padding: 20,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    analyticsLabel: { color: '#A7F3D0', fontSize: 10, fontWeight: 'bold', letterSpacing: 1 },
-    performanceHeading: { color: '#FFF', fontSize: 22, fontWeight: '900', marginTop: 5 },
-    sessionLabel: { color: '#FFF', fontSize: 11, marginTop: 5, opacity: 0.8 },
-    
-    aggregateCircle: {
-        backgroundColor: 'rgba(255,255,255,0.15)',
-        padding: 15,
-        borderRadius: 15,
-        alignItems: 'center',
-        minWidth: 100
-    },
-    aggregateSub: { color: '#FFF', fontSize: 8, fontWeight: 'bold' },
-    aggregateValue: { color: '#FFF', fontSize: 28, fontWeight: 'bold' },
+  container: { flex: 1, backgroundColor: "#F8FAFC" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+   backgroundColor:"#1E7F4D",
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9'
+  },
+  backBtn: {
+    padding: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#1E7F4D',
+    backgroundColor:"#fff",
+    marginRight: 15
+  },
+  headerTitle: { fontSize: 20, fontWeight: "700", color: "#fff" },
+  userRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  headerSubtitle: { fontSize: 13, color: "#fff", fontWeight: '500' },
 
-    chartContainer: {
-        backgroundColor: '#FFF',
-        marginHorizontal: 15,
-        padding: 20,
-        borderRadius: 20,
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOpacity: 0.1,
-        shadowRadius: 10
-    },
-    sectionTitle: { fontSize: 16, fontWeight: '900', color: '#001A09' },
-    sectionSub: { fontSize: 10, color: '#999', letterSpacing: 1 },
+  selectorContainer: { padding: 20 },
+  selectorLabel: { fontSize: 14, color: "#64748b", marginBottom: 10, fontWeight: '600' },
 
-    emptyNotice: { margin: 20, alignItems: 'center' },
-    emptyText: { color: '#999', fontStyle: 'italic' },
+  dropdown: {
+    height: 50,
+    borderColor: '#e2e8f0',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+  },
+  icon: { marginRight: 10 },
 
-    grid: { 
-        flexDirection: 'row', 
-        flexWrap: 'wrap', 
-        padding: 10, 
-        justifyContent: 'space-between' 
-    },
-    kpiCard: {
-        backgroundColor: '#FFF',
-        width: (width / 2) - 20,
-        padding: 15,
-        borderRadius: 15,
-        marginBottom: 15,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOpacity: 0.05
-    },
-    cardHeader: { alignItems: 'flex-end' },
-    maxWeight: { fontSize: 9, color: '#999', fontWeight: 'bold' },
-    kpiTitle: { fontSize: 12, fontWeight: '800', color: '#666', marginTop: 10 },
-    kpiValue: { fontSize: 24, fontWeight: '900', marginVertical: 5 },
-    progressBarBg: { height: 6, backgroundColor: '#E8F5E9', borderRadius: 3, overflow: 'hidden' },
-    progressBarFill: { height: '100%', backgroundColor: '#1E7F4D' }
+  overallCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    padding: 20,
+    borderRadius: 16,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10
+  },
+  iconBox: {
+    backgroundColor: '#1E7F4D',
+    width: 65,
+    height: 65,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  overallPercentText: { color: '#fff', fontSize: 18, fontWeight: '800' },
+  overallLabel: { fontSize: 14, color: '#64748b', fontWeight: '700' },
+  pointsSubText: { fontSize: 13, color: '#1E7F4D', fontWeight: '600', marginTop: 2 },
+
+  chartContainer: {
+    backgroundColor: '#fff',
+    margin: 20,
+    padding: 15,
+    borderRadius: 16,
+    elevation: 2
+  },
+  sectionHeading: { fontSize: 16, fontWeight: '700', color: '#1e293b', marginBottom: 15 },
+
+  kpiCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 20,
+    marginBottom: 15,
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f1f5f9'
+  },
+  kpiHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f1f5f9'
+  },
+  kpiName: { fontSize: 15, fontWeight: '700', color: '#1e293b' },
+  kpiScoreText: { fontSize: 15, fontWeight: '700', color: '#1E7F4D' },
+
+  subKpiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6
+  },
+  subKpiName: { fontSize: 13, color: '#64748b', flex: 1 },
+  subKpiScoreBox: { flexDirection: 'row', alignItems: 'center' },
+  subKpiScore: { fontSize: 13, fontWeight: '700', color: '#1e293b' },
+  subKpiTotal: { fontSize: 11, color: '#94a3b8' },
+
+  detailsContainer: {
+    margin: 20,
+    padding: 40,
+    alignItems: 'center',
+  },
+  noDataText: { color: '#94a3b8', fontSize: 14, textAlign: 'center' },
 });
 
 export default SeeOwnPerformance;

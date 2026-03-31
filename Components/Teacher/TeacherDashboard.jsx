@@ -229,7 +229,7 @@ const checkEvaluatorAndProceed = async () => {
 
       <TouchableOpacity style={[styles.block, styles.blockOrange]} 
       
-       onPress={() => navigation.navigate("SeeOwnPerformance", { userId: userId })}>
+       onPress={() => navigation.navigate("SeeOwnPerformance", { username: teacherName, userId:userId })}>
         <View style={[styles.iconBox, { backgroundColor: "#ea580c" }]}>
           <Icon name="analytics" size={24} color="#fff" />
         </View>
@@ -241,8 +241,22 @@ const checkEvaluatorAndProceed = async () => {
       </TouchableOpacity>
 
       {/* ================= LOGOUT ================= */}
-      <TouchableOpacity style={styles.logout} 
-     
+      <TouchableOpacity 
+        style={styles.logout} 
+        onPress={() => {
+          Alert.alert(
+            "Logout",
+            "Are you sure you want to log out?",
+            [
+              { text: "Cancel", style: "cancel" },
+              { 
+                text: "Logout", 
+                style: "destructive", 
+                onPress: () => onLogout() // Calls the function passed from App.js/Navigation
+              }
+            ]
+          );
+        }}
       >
         <Icon name="logout" size={18} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>

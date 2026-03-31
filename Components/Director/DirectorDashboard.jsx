@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const DirectorDashboard = ({ navigation, route }) => {
+const DirectorDashboard = ({ navigation, route}) => {
   // Always ensure onLogout is a valid function
   const { onLogout } = route.params;
 

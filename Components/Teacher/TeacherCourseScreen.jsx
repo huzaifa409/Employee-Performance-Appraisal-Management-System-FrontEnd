@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -17,9 +17,7 @@ const TeachersCoursesScreen = ({ navigation, route }) => {
 
   const fetchTeachersCourses = async () => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/TeacherDashboard/GetTeachersWithCourses`
-      );
+      const response = await fetch(`${BASE_URL}/TeacherDashboard/GetTeachersWithCourses`);
       const result = await response.json();
       setData(result);
     } catch (error) {
@@ -55,15 +53,14 @@ const TeachersCoursesScreen = ({ navigation, route }) => {
     const isSubmitted = submitted[key];
 
     return (
-      <View style={styles.card} key={course}>
-        <Text style={styles.courseCode}>{course}</Text>
-        <Text style={styles.teacherName}>Instructor: {teacher.TeacherName}</Text>
+      <View style={[styles.card, isSubmitted && { opacity: 0.7 }]} key={course}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.courseCode}>{course}</Text>
+          <Text style={styles.teacherName}>{teacher.TeacherName}</Text>
+        </View>
 
         <TouchableOpacity
-          style={[
-            styles.evaluateBtn,
-            isSubmitted && { backgroundColor: "#B0B0B0" },
-          ]}
+          style={[styles.evaluateBtn, isSubmitted && styles.evaluateBtnDisabled]}
           disabled={isSubmitted}
           onPress={() =>
             navigation.navigate("PeerEvaluationScreen", {
@@ -73,9 +70,7 @@ const TeachersCoursesScreen = ({ navigation, route }) => {
             })
           }
         >
-          <Text style={styles.btnText}>
-            {isSubmitted ? "Evaluated" : "Evaluate"}
-          </Text>
+          <Text style={styles.btnText}>{isSubmitted ? "Evaluated" : "Evaluate"}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -84,17 +79,15 @@ const TeachersCoursesScreen = ({ navigation, route }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome, Teacher 👋</Text>
-        <Text style={styles.sub}>Your Courses & Evaluations</Text>
+        <Text style={styles.welcome}>Hello, Teacher 👋</Text>
+        <Text style={styles.sub}>Check your courses & evaluations</Text>
       </View>
 
       <FlatList
         data={data}
         keyExtractor={(item) => item.TeacherID.toString()}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-        renderItem={({ item }) => (
-          <View>{item.Courses.map((course) => renderCourse(item, course))}</View>
-        )}
+        renderItem={({ item }) => <View>{item.Courses.map((course) => renderCourse(item, course))}</View>}
       />
     </ScrollView>
   );
@@ -103,50 +96,70 @@ const TeachersCoursesScreen = ({ navigation, route }) => {
 export default TeachersCoursesScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f7fa" },
-
-  header: { padding: 20 },
-  welcome: { fontSize: 22, fontWeight: "800", color: "#0f4c75", marginBottom: 4 },
-  sub: { fontSize: 16, color: "#3282b8", fontWeight: "600" },
-
+  container: {
+    flex: 1,
+    backgroundColor: "#f2f6ff",
+  },
+  header: {
+    padding: 20,
+    backgroundColor: "#019c0c",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    marginBottom: 20,
+  },
+  welcome: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#fff",
+    marginBottom: 6,
+  },
+  sub: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#dbe4ff",
+  },
   card: {
-    backgroundColor: "#40991d",
-    padding: 18,
-    borderRadius: 16,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
     marginVertical: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-
-  courseCode: {
-    backgroundColor: "#3282b8",
-    color: "#fff",
-    alignSelf: "flex-start",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    fontWeight: "700",
-    marginBottom: 10,
-    fontSize: 14,
-    letterSpacing: 0.5,
-  },
-
-  teacherName: { color: "#1b262c", fontSize: 16, fontWeight: "600", marginBottom: 14 },
-
-  evaluateBtn: {
-    backgroundColor: "#0f4c75",
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    shadowColor: "#0f4c75",
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    elevation: 6, // Android shadow
   },
-
-  btnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  cardHeader: {
+    marginBottom: 16,
+  },
+  courseCode: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#4c6ef5",
+    marginBottom: 6,
+  },
+  teacherName: {
+    fontSize: 15,
+    color: "#495057",
+    fontWeight: "600",
+  },
+  evaluateBtn: {
+    backgroundColor: "#4c6ef5",
+    paddingVertical: 14,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#4c6ef5",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  evaluateBtnDisabled: {
+    backgroundColor: "#adb5bd",
+  },
+  btnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 16,
+  },
 });

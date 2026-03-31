@@ -17,7 +17,7 @@ const options = [
 ];
 
 const StudentEvaluation = ({ route, navigation }) => {
-  const { enrollmentID, studentId, courseCode } = route.params;
+  const { enrollmentID, studentId, courseCode, sessionID } = route.params;
 
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -26,7 +26,6 @@ const StudentEvaluation = ({ route, navigation }) => {
     fetchQuestions();
   }, []);
 
-  // ================= FETCH QUESTIONS =================
   const fetchQuestions = async () => {
     try {
       const type = encodeURIComponent("student evaluation");
@@ -37,23 +36,21 @@ const StudentEvaluation = ({ route, navigation }) => {
 
       const data = await response.json();
 
-      if (!data?.Questions || data.Questions.length === 0) {
+      if (!data?.Questions?.length) {
         Alert.alert("Info", "No evaluation available");
         return;
       }
 
       setQuestions(data.Questions);
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Unable to load questions");
     }
   };
 
-  // ================= SELECT ANSWER =================
   const selectOption = (questionID, score) => {
     setAnswers((prev) => ({ ...prev, [questionID]: score }));
   };
 
-  // ================= SUBMIT =================
   const submitEvaluation = async () => {
     if (questions.length !== Object.keys(answers).length) {
       Alert.alert("Error", "Please answer all questions");
@@ -65,11 +62,12 @@ const StudentEvaluation = ({ route, navigation }) => {
       QuestionID: parseInt(qid),
       Score: answers[qid],
       StudentId: studentId,
+      // SessionID: sessionID, // ✅ FIXED
     }));
 
     try {
       const response = await fetch(
-        `${BASE_URL}/StudentDashboard/SubmitStudentEvaluation`,
+        `${BASE_URL}/studentDashboard/SubmitStudentEvaluation`, // ✅ fixed case
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -79,14 +77,20 @@ const StudentEvaluation = ({ route, navigation }) => {
 
       const result = await response.json();
 
-      if (result.success) {
-        Alert.alert("Success", "Evaluation submitted", [
-          { text: "OK", onPress: () => navigation.goBack() },
-        ]);
-      } else {
+     if (result.success) {
+  Alert.alert("Success", "Evaluation submitted", [
+    {
+      text: "OK",
+      onPress: () => {
+        navigation.navigate("StudentDashboard"); // 🔥 force reload
+      },
+    },
+  ]);
+}
+      else {
         Alert.alert("Error", "Submission failed");
       }
-    } catch (error) {
+    } catch {
       Alert.alert("Error", "Unable to submit evaluation");
     }
   };
@@ -128,42 +132,4 @@ const StudentEvaluation = ({ route, navigation }) => {
 };
 
 export default StudentEvaluation;
-
-const styles = StyleSheet.create({
-  heading: { fontSize: 18, fontWeight: "700", marginBottom: 6 },
-  sub: { color: "#666", marginBottom: 16 },
-  card: {
-    backgroundColor: "#f0fdf4",
-    padding: 14,
-    borderRadius: 14,
-    marginBottom: 14,
-  },
-  qNo: {
-    backgroundColor: "#dcfce7",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    textAlign: "center",
-    textAlignVertical: "center",
-    marginBottom: 8,
-    fontWeight: "700",
-  },
-  qText: { fontSize: 14, marginBottom: 12 },
-  optionsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  option: {
-    borderWidth: 1,
-    borderColor: "#86efac",
-    padding: 10,
-    borderRadius: 10,
-    width: "48%",
-    alignItems: "center",
-  },
-  selected: { backgroundColor: "#bbf7d0" },
-  submitBtn: {
-    backgroundColor: "#166534",
-    padding: 14,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 20,
-  },
-});
+const styles = StyleSheet.create({ heading: { fontSize: 18, fontWeight: "700", marginBottom: 6 }, sub: { color: "#666", marginBottom: 16 }, card: { backgroundColor: "#f0fdf4", padding: 14, borderRadius: 14, marginBottom: 14, }, qNo: { backgroundColor: "#dcfce7", width: 30, height: 30, borderRadius: 15, textAlign: "center", textAlignVertical: "center", marginBottom: 8, fontWeight: "700", }, qText: { fontSize: 14, marginBottom: 12 }, optionsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 10 }, option: { borderWidth: 1, borderColor: "#86efac", padding: 10, borderRadius: 10, width: "48%", alignItems: "center", }, selected: { backgroundColor: "#bbf7d0" }, submitBtn: { backgroundColor: "#166534", padding: 14, borderRadius: 14, alignItems: "center", marginTop: 20, }, });

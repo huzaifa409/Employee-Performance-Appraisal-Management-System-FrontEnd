@@ -8,85 +8,46 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-
+import AsyncStorage from "@react-native-async-storage/async-storage"; // for storing token
 import BASE_URL from "../../API-URL/API";
 
-
-const StudentDashboard = ({ userId, navigation }) => {
+const StudentDashboard = ({ userId, navigation,onLogout  }) => {
+  
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [evaluationActive, setEvaluationActive] = useState(false);
   const [confidentialActive, setConfidentialActive] = useState(false);
   const [submittedEnrollments, setSubmittedEnrollments] = useState([]);
-
-
-
   const [studentName, setStudentName] = useState("");
 
-
- const fetchSubmittedEvaluations = async () => {
-  try {
-    const response = await fetch(
-      `${BASE_URL}/studentDashboard/GetSubmittedStudentEvaluations/${userId}`
-    );
-
-    const data = await response.json();
-
-    // ✅ API already returns enrollmentID array
-    setSubmittedEnrollments(data);
-  } catch (error) {
-    console.log("Submitted eval error:", error);
-    setSubmittedEnrollments([]);
-  }
-};
-
-
-
-  const Eval = encodeURIComponent("confidential evaluation".trim().toLowerCase());
-  const fetchConfidentialFlag = async () => {
+  // ================= FETCH SUBMITTED =================
+  const fetchSubmittedEvaluations = async () => {
     try {
       const response = await fetch(
-        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${Eval}`
+        `${BASE_URL}/studentDashboard/GetSubmittedStudentEvaluations/${userId}`
       );
-
-      if (!response.ok) {
-        setConfidentialActive(false);
-        return;
-      }
-
       const data = await response.json();
-      setConfidentialActive(data?.Flag === "1");
-    } catch {
-      setConfidentialActive(false);
+      setSubmittedEnrollments(data);
+    } catch (error) {
+      console.log("Submitted eval error:", error);
+      setSubmittedEnrollments([]);
     }
   };
 
-
-
-
-
-
-  // ================= FETCH STUDENT NAME =================
-  const evaluationType = encodeURI("Student Evaluation".trim().toLowerCase());
+  // ================= STUDENT NAME =================
   const fetchStudentName = async () => {
     try {
       const response = await fetch(
         `${BASE_URL}/studentDashboard/GetStudentName/${userId}`
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch student name");
-      }
-
       const name = await response.json();
       setStudentName(name);
-    } catch (error) {
-      console.error("Student name error:", error);
+    } catch {
       setStudentName("Student");
     }
   };
 
-  // ================= FETCH COURSES =================
+  // ================= COURSES =================
   const fetchCourses = async () => {
     try {
       const response = await fetch(
@@ -101,16 +62,16 @@ const StudentDashboard = ({ userId, navigation }) => {
 
       const data = await response.json();
 
-      const mappedData = data.map(item => ({
+      const mappedData = data.map((item) => ({
         EnrollmentID: item.EnrollmentID,
         CourseCode: item.CourseCode,
         CourseTitle: item.CourseTitle,
         TeacherName: item.TeacherName,
         SessionName: item.SessionName,
+        SessionID: item.SessionID,
       }));
 
       setCourses(mappedData);
-      fetchEvaluationFlag();
     } catch (error) {
       Alert.alert("Error", error.message);
     } finally {
@@ -118,78 +79,99 @@ const StudentDashboard = ({ userId, navigation }) => {
     }
   };
 
-  // ================= FETCH EVALUATION FLAG =================
-  const fetchEvaluationFlag = async () => {
+  // ================= EVALUATION FLAGS =================
+  const fetchEvaluationFlags = async () => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${evaluationType}`
+      const studentEvalType = encodeURIComponent("student evaluation");
+      const confidentialEvalType = encodeURIComponent("confidential evaluation");
+
+      // Student Evaluation
+      const studentResp = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${studentEvalType}`
       );
+      const studentData = await studentResp.json();
+      setEvaluationActive(studentData?.Flag === "1");
 
-      if (!response.ok) {
-        setEvaluationActive(false);
-        return;
-      }
-
-      const data = await response.json();
-      setEvaluationActive(data.Flag === "1");
-    } catch {
+      // Confidential Evaluation
+      const confResp = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetActiveQuestionnaire/${confidentialEvalType}`
+      );
+      const confData = await confResp.json();
+      setConfidentialActive(confData?.Flag === "1");
+    } catch (error) {
       setEvaluationActive(false);
+      setConfidentialActive(false);
     }
   };
 
-  useEffect(() => {
-    fetchStudentName();
-    fetchCourses();
-    fetchConfidentialFlag();
-      fetchSubmittedEvaluations();
-  }, [userId]);
-
-  // ================= RENDER COURSE =================
- // ================= RENDER COURSE =================
-const renderCourse = ({ item }) => {
-  const alreadyEvaluated = submittedEnrollments.includes(item.EnrollmentID);
-
-  return (
-    <View style={styles.courseCard}>
-      <View style={styles.courseHeader}>
-        <Text style={styles.courseCode}>{item.CourseCode}</Text>
-        <Text style={styles.session}>{item.SessionName}</Text>
-      </View>
-
-      <Text style={styles.courseTitle}>{item.CourseTitle}</Text>
-      <Text style={styles.teacherName}>{item.TeacherName}</Text>
-
-      {evaluationActive && !alreadyEvaluated ? (
-        <TouchableOpacity
-          style={styles.evaluateButton}
-          onPress={() =>
-            navigation.navigate("StudentEvaluation", {
-              enrollmentID: item.EnrollmentID,
-              studentId: userId,
-              courseCode: item.CourseCode,
-            })
+  // ================= LOGOUT =================
+// ================= LOGOUT =================
+const handleLogout = () => {
+  Alert.alert(
+    "Logout",
+    "Are you sure you want to log out?",
+    [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: () => {
+          if (onLogout) {
+            onLogout(); // call parent logout function
           }
-        >
-          <Text style={styles.evaluateButtonText}>Evaluate</Text>
-        </TouchableOpacity>
-      ) : (
-        <View
-          style={[
-            styles.evaluateButton,
-            { backgroundColor: "#6c757d" },
-          ]}
-        >
-          <Text style={styles.evaluateButtonText}>
-            {alreadyEvaluated ? "Already Evaluated" : "Evaluation will be on soon"}
-          </Text>
-        </View>
-      )}
-    </View>
+        },
+      },
+    ]
   );
 };
 
+  // ================= EFFECT =================
+  useEffect(() => {
+    fetchStudentName();
+    fetchCourses();
+    fetchSubmittedEvaluations();
+    fetchEvaluationFlags();
+  }, [userId]);
 
-  // ================= LOADER =================
+  // ================= RENDER COURSE =================
+  const renderCourse = ({ item }) => {
+    const alreadyEvaluated = submittedEnrollments.includes(item.EnrollmentID);
+
+    return (
+      <View style={styles.courseCard}>
+        <View style={styles.courseHeader}>
+          <Text style={styles.courseCode}>{item.CourseCode}</Text>
+          <Text style={styles.session}>{item.SessionName}</Text>
+        </View>
+
+        <Text style={styles.courseTitle}>{item.CourseTitle}</Text>
+        <Text style={styles.teacherName}>{item.TeacherName}</Text>
+
+        {evaluationActive && !alreadyEvaluated ? (
+          <TouchableOpacity
+            style={styles.evaluateButton}
+            onPress={() =>
+              navigation.navigate("StudentEvaluation", {
+                enrollmentID: item.EnrollmentID,
+                studentId: userId,
+                courseCode: item.CourseCode,
+                sessionID: item.SessionID,
+              })
+            }
+          >
+            <Text style={styles.evaluateButtonText}>Evaluate</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={[styles.evaluateButton, { backgroundColor: "#6c757d" }]}>
+            <Text style={styles.evaluateButtonText}>
+              {alreadyEvaluated ? "Already Evaluated" : "Evaluation Closed"}
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -200,48 +182,53 @@ const renderCourse = ({ item }) => {
 
   return (
     <View style={styles.container}>
-      {/* STUDENT HEADER */}
+      {/* ========== PROFILE & LOGOUT ========== */}
       <View style={styles.profileContainer}>
         <View style={styles.profileText}>
           <Text style={styles.studentName}>{studentName}</Text>
           <Text style={styles.studentId}>{userId}</Text>
         </View>
 
-        <TouchableOpacity
-          disabled={!confidentialActive}
-          style={[
-            styles.confidentialButton,
-            { opacity: confidentialActive ? 1 : 0.5 },
-          ]}
-          onPress={() => {
-            if (!confidentialActive) return;
+        <View style={{ flexDirection: "column", alignItems: "flex-end" }}>
+          <TouchableOpacity
+            disabled={!confidentialActive}
+            style={[
+              styles.confidentialButton,
+              { opacity: confidentialActive ? 1 : 0.5, marginBottom: 5 },
+            ]}
+            onPress={() =>
+              confidentialActive &&
+              navigation.navigate("Confidential", {
+                studentId: userId,
+              })
+            }
+          >
+            <Text style={styles.confidentialButtonText}>
+              Confidential Evaluation
+            </Text>
+          </TouchableOpacity>
 
-            navigation.navigate("Confidential", {
-              confidential: true,
-              studentId: userId,
-            });
-          }}
-        >
-          <Text style={styles.confidentialButtonText}>
-            Confidential Evaluation
-          </Text>
-        </TouchableOpacity>
-
+          
+        </View>
       </View>
 
-      {/* PAGE HEADER */}
       <Text style={styles.headerTitle}>Teacher Evaluation</Text>
-      <Text style={styles.headerSubtitle}>
-        Review and evaluate your courses for the current semester
-      </Text>
 
-      {/* COURSE LIST */}
-      <FlatList
-        data={courses}
-        keyExtractor={item => item.EnrollmentID.toString()}
-        renderItem={renderCourse}
-        contentContainerStyle={{ paddingBottom: 20 }}
-      />
+    <FlatList
+  data={courses}
+  keyExtractor={(item) => item.EnrollmentID.toString()}
+  renderItem={renderCourse}
+/>
+
+
+
+{/* Bottom logout button */}
+<TouchableOpacity
+  style={[styles.logoutButton]}
+  onPress={handleLogout}
+>
+  <Text style={styles.logoutButtonText}>Logout</Text>
+</TouchableOpacity>
     </View>
   );
 };
@@ -249,7 +236,6 @@ const renderCourse = ({ item }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f8f9fa", padding: 15 },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-
   profileContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -262,22 +248,14 @@ const styles = StyleSheet.create({
   profileText: { flex: 1 },
   studentName: { fontSize: 16, fontWeight: "600", color: "#343a40" },
   studentId: { fontSize: 12, color: "#6c757d" },
-
   confidentialButton: {
     backgroundColor: "#28a745",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  confidentialButtonText: {
-    color: "#ffffff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-
+  confidentialButtonText: { color: "#ffffff", fontSize: 12, fontWeight: "bold" },
   headerTitle: { fontSize: 18, fontWeight: "700", marginBottom: 5 },
-  headerSubtitle: { fontSize: 14, color: "#6c757d", marginBottom: 10 },
-
   courseCard: {
     backgroundColor: "#ffffff",
     borderRadius: 10,
@@ -285,10 +263,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 3,
   },
-  courseHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
+  courseHeader: { flexDirection: "row", justifyContent: "space-between" },
   courseCode: {
     backgroundColor: "#d4edda",
     paddingHorizontal: 8,
@@ -299,7 +274,6 @@ const styles = StyleSheet.create({
   session: { fontSize: 12, color: "#6c757d" },
   courseTitle: { fontSize: 16, fontWeight: "600" },
   teacherName: { fontSize: 14, color: "#6c757d", marginBottom: 10 },
-
   evaluateButton: {
     backgroundColor: "#28a745",
     borderRadius: 8,
@@ -307,6 +281,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   evaluateButtonText: { color: "#ffffff", fontWeight: "bold" },
+
+  logoutButton: {
+  backgroundColor: "#dc3545",
+  paddingVertical: 12,
+  alignItems: "center",
+  borderRadius: 8,
+  marginTop: 20,
+  marginBottom: 30,
+},
+
+logoutButtonText: {
+  color: "#fff",
+  fontWeight: "bold",
+  fontSize: 16,
+},
 });
 
 export default StudentDashboard;

@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  FlatList
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
@@ -25,7 +26,6 @@ const AddKPI = () => {
   const [loading, setLoading] = useState(false);
   const [openKpiId, setOpenKpiId] = useState(null);
 
-  // Form States
   const [kpiName, setKpiName] = useState("");
   const [kpiWeight, setKpiWeight] = useState("");
   const [showSubSection, setShowSubSection] = useState(false);
@@ -33,7 +33,6 @@ const AddKPI = () => {
   const [subName, setSubName] = useState("");
   const [subWeight, setSubWeight] = useState("");
 
-  // Dynamic Add States
   const [addingSubTo, setAddingSubTo] = useState(null);
   const [dynamicSub, setDynamicSub] = useState({ name: "", weight: "" });
 
@@ -57,7 +56,6 @@ const AddKPI = () => {
     setLoading(true);
     try {
       const res = await fetch(`${BASE_URL}/Kpi/view-weights/${selectedSession}/${selectedEmpType}`);
-      if (!res.ok) throw new Error("Server mismatch");
       const data = await res.json();
       setKpiList(data);
     } catch (err) {
@@ -68,13 +66,19 @@ const AddKPI = () => {
   }, [selectedSession, selectedEmpType]);
 
   useEffect(() => { fetchDropdowns(); }, []);
-  useEffect(() => { refreshKpis(); }, [refreshKpis]);
+
+  useEffect(() => {
+    if (selectedSession && selectedEmpType) {
+      refreshKpis();
+    }
+  }, [selectedSession, selectedEmpType]);
 
   const handleSaveMainKpi = async () => {
     if (!selectedSession || !selectedEmpType || !kpiName || !kpiWeight) {
       Alert.alert("Missing Info", "Please provide all details.");
       return;
     }
+
     const payload = {
       SessionId: parseInt(selectedSession),
       EmployeeTypeId: parseInt(selectedEmpType),
@@ -90,6 +94,7 @@ const AddKPI = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
       if (res.ok) {
         Alert.alert("Success", "KPI Architecture Created");
         setKpiName(""); setKpiWeight(""); setTempSubKpis([]); setShowSubSection(false);
@@ -116,12 +121,20 @@ const AddKPI = () => {
 
   const addDynamicSubKpi = async (kpiId) => {
     if (!dynamicSub.name || !dynamicSub.weight) return;
-    const payload = { SessionId: parseInt(selectedSession), KpiId: parseInt(kpiId), Name: dynamicSub.name, NewWeight: parseInt(dynamicSub.weight) };
+
+    const payload = {
+      SessionId: parseInt(selectedSession),
+      KpiId: parseInt(kpiId),
+      Name: dynamicSub.name,
+      NewWeight: parseInt(dynamicSub.weight)
+    };
+
     const res = await fetch(`${BASE_URL}/Kpi/add-subkpi-dynamic`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     if (res.ok) {
       setAddingSubTo(null);
       setDynamicSub({ name: "", weight: "" });
@@ -129,155 +142,210 @@ const AddKPI = () => {
     }
   };
 
-  const LabelInput = ({ label, ...props }) => (
-    <View style={ss.inputGroup}>
-      <Text style={ss.fieldLabel}>{label}</Text>
-      <TextInput style={ss.input} placeholderTextColor="#999" {...props} />
+  const renderKpiItem = ({ item }) => (
+    <View style={ss.kpiCard}>
+      <TouchableOpacity
+        style={ss.kpiHeader}
+        onPress={() => setOpenKpiId(prev => (prev === item.kpiId ? null : item.kpiId))}
+      >
+        <View style={ss.kpiInfo}>
+          <View style={ss.kpiIconBox}>
+            <Icon name="chart-box-outline" size={24} color="#059669" />
+          </View>
+          <View>
+            <Text style={ss.kpiNameText}>{item.kpiName}</Text>
+            <Text style={ss.kpiWeightText}>{item.totalKpiWeight}%</Text>
+          </View>
+        </View>
+
+        <View style={ss.actionIcons}>
+          <TouchableOpacity onPress={() => setAddingSubTo(prev => (prev === item.kpiId ? null : item.kpiId))}>
+            <Icon name="plus-box" size={26} color="#059669" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => deleteKpi(item.kpiId)}>
+            <Icon name="trash-can-outline" size={26} color="#EF4444" />
+          </TouchableOpacity>
+
+          <Icon name={openKpiId === item.kpiId ? "chevron-up" : "chevron-down"} size={24} />
+        </View>
+      </TouchableOpacity>
+
+      {addingSubTo === item.kpiId && (
+        <View style={ss.inlineAdd}>
+          <TextInput placeholder="Sub-KPI Name" style={ss.inlineInput}
+            value={dynamicSub.name}
+            onChangeText={t => setDynamicSub({ ...dynamicSub, name: t })}
+          />
+          <TextInput placeholder="%" style={[ss.inlineInput, { width: 50 }]}
+            value={dynamicSub.weight}
+            onChangeText={t => setDynamicSub({ ...dynamicSub, weight: t })}
+          />
+          <TouchableOpacity style={ss.inlineCheck} onPress={() => addDynamicSubKpi(item.kpiId)}>
+            <Icon name="check" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {openKpiId === item.kpiId && (
+        <FlatList
+          data={item.subKpis}
+          keyExtractor={(sk) => sk.subKpiId.toString()}
+          scrollEnabled={false}
+          renderItem={({ item: sk }) => (
+            <View style={ss.subItem}>
+              <Text style={ss.subName}>{sk.subKpiName}</Text>
+              <View style={ss.subWeightBadge}>
+                <Text style={ss.subWeightValue}>{sk.weight}%</Text>
+              </View>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 
-  return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={ss.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#065F46" />
-      <View style={ss.header}>
-        <Text style={ss.headerTitle}>KPI Configuration</Text>
-        <Text style={ss.headerSub}>Manage Employee Performance Metrics</Text>
-      </View>
+return (
+  <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    style={ss.container}
+  >
+    <StatusBar barStyle="light-content" backgroundColor="#065F46" />
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* SETUP CARD */}
-        <View style={ss.card}>
-          <Text style={ss.cardTitle}>Create New KPI</Text>
-          
-          <Text style={ss.fieldLabel}>Academic Session</Text>
-          <Dropdown
-            style={ss.dropdown}
-            data={sessions}
-            labelField="label"
-            valueField="value"
-            placeholder="Select Session"
-            value={selectedSession}
-            onChange={item => setSelectedSession(item.value)}
-          />
+    <FlatList
+      data={kpiList}
+      keyExtractor={(item) => item.kpiId.toString()}
+      renderItem={renderKpiItem}
+      extraData={{ openKpiId, addingSubTo }}
+      contentContainerStyle={{ paddingBottom: 40 }}
 
-          <Text style={ss.fieldLabel}>Target Employee Type</Text>
-          <Dropdown
-            style={ss.dropdown}
-            data={employeeTypes}
-            labelField="label"
-            valueField="value"
-            placeholder="Select Role"
-            value={selectedEmpType}
-            onChange={item => setSelectedEmpType(item.value)}
-          />
+      ListHeaderComponent={
+        <>
+          {/* HEADER */}
+          <View style={ss.header}>
+            <Text style={ss.headerTitle}>KPI Configuration</Text>
+            <Text style={ss.headerSub}>
+              Manage Employee Performance Metrics
+            </Text>
+          </View>
 
-          <LabelInput label="KPI Heading Name" placeholder="e.g. Research & Development" value={kpiName} onChangeText={setKpiName} />
-          <LabelInput label="Allocation Weight (%)" placeholder="e.g. 30" keyboardType="numeric" value={kpiWeight} onChangeText={setKpiWeight} />
+          {/* FORM CARD (UNCHANGED) */}
+          <View style={ss.card}>
+            <Text style={ss.cardTitle}>Create New KPI</Text>
 
-          {!showSubSection ? (
-            <TouchableOpacity style={ss.primaryBtn} onPress={() => setShowSubSection(true)}>
-              <Text style={ss.btnText}>Add Sub-Categories</Text>
-              <Icon name="arrow-right" size={20} color="white" />
-            </TouchableOpacity>
-          ) : (
-            <View style={ss.subSection}>
-              <Text style={ss.subSectionTitle}>Define Sub-KPIs</Text>
-              <View style={ss.row}>
-                <View style={{ flex: 2 }}>
-                  <LabelInput label="Sub-KPI Name" placeholder="Specific Task" value={subName} onChangeText={setSubName} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 10 }}>
-                  <LabelInput label="Weight" placeholder="%" keyboardType="numeric" value={subWeight} onChangeText={setSubWeight} />
-                </View>
-              </View>
+            <Text style={ss.fieldLabel}>Academic Session</Text>
+            <Dropdown
+              style={ss.dropdown}
+              data={sessions}
+              labelField="label"
+              valueField="value"
+              placeholder="Select Session"
+              value={selectedSession}
+              onChange={(item) => setSelectedSession(item.value)}
+            />
 
-              <TouchableOpacity style={ss.addBtn} onPress={() => {
-                if (subName && subWeight) {
-                  setTempSubKpis([...tempSubKpis, { id: Date.now(), name: subName, weight: subWeight }]);
-                  setSubName(""); setSubWeight("");
-                }
-              }}>
-                <Icon name="plus" size={20} color="#059669" />
-                <Text style={ss.addBtnText}>Add to Draft</Text>
-              </TouchableOpacity>
+            <Text style={ss.fieldLabel}>Target Employee Type</Text>
+            <Dropdown
+              style={ss.dropdown}
+              data={employeeTypes}
+              labelField="label"
+              valueField="value"
+              placeholder="Select Role"
+              value={selectedEmpType}
+              onChange={(item) => setSelectedEmpType(item.value)}
+            />
 
-              {tempSubKpis.map(s => (
-                <View key={s.id} style={ss.draftItem}>
-                  <Text style={ss.draftText}>{s.name} <Text style={{ color: "#059669" }}>({s.weight}%)</Text></Text>
-                  <TouchableOpacity onPress={() => setTempSubKpis(tempSubKpis.filter(x => x.id !== s.id))}>
-                    <Icon name="close-circle" size={22} color="#EF4444" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-
-              <TouchableOpacity style={ss.saveBtn} onPress={handleSaveMainKpi}>
-                <Text style={ss.btnText}>Finalize & Save KPI</Text>
-              </TouchableOpacity>
+            <View style={ss.inputGroup}>
+              <Text style={ss.fieldLabel}>KPI Heading Name</Text>
+              <TextInput
+                style={ss.input}
+                value={kpiName}
+                onChangeText={setKpiName}
+              />
             </View>
-          )}
-        </View>
 
-        {/* LIST SECTION */}
-        <View style={ss.listHeader}>
-          <Text style={ss.listTitle}>Live KPI Overview</Text>
-          {loading && <ActivityIndicator size="small" color="#059669" />}
-        </View>
+            <View style={ss.inputGroup}>
+              <Text style={ss.fieldLabel}>Allocation Weight (%)</Text>
+              <TextInput
+                style={ss.input}
+                keyboardType="numeric"
+                value={kpiWeight}
+                onChangeText={setKpiWeight}
+              />
+            </View>
 
-        {kpiList.map((item) => (
-          <View key={item.kpiId} style={ss.kpiCard}>
-            <TouchableOpacity 
-                activeOpacity={0.7}
-                style={ss.kpiHeader} 
-                onPress={() => setOpenKpiId(openKpiId === item.kpiId ? null : item.kpiId)}
-            >
-              <View style={ss.kpiInfo}>
-                <View style={ss.kpiIconBox}>
-                    <Icon name="chart-box-outline" size={24} color="#059669" />
+            {!showSubSection ? (
+              <TouchableOpacity
+                style={ss.primaryBtn}
+                onPress={() => setShowSubSection(true)}
+              >
+                <Text style={ss.btnText}>Add Sub-Categories</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={ss.subSection}>
+                <Text style={ss.subSectionTitle}>Define Sub-KPIs</Text>
+
+                <View style={ss.row}>
+                  <TextInput
+                    placeholder="Sub-KPI Name"
+                    style={[ss.input, { flex: 2 }]}
+                    value={subName}
+                    onChangeText={setSubName}
+                  />
+                  <TextInput
+                    placeholder="%"
+                    style={[ss.input, { flex: 1, marginLeft: 10 }]}
+                    value={subWeight}
+                    onChangeText={setSubWeight}
+                  />
                 </View>
-                <View>
-                  <Text style={ss.kpiNameText}>{item.kpiName}</Text>
-                  <Text style={ss.kpiWeightText}>{item.totalKpiWeight}% of total</Text>
-                </View>
-              </View>
-              <View style={ss.actionIcons}>
-                <TouchableOpacity onPress={() => setAddingSubTo(addingSubTo === item.kpiId ? null : item.kpiId)}>
-                    <Icon name="plus-box" size={26} color="#059669" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteKpi(item.kpiId)}>
-                    <Icon name="trash-can-outline" size={26} color="#EF4444" />
-                </TouchableOpacity>
-                <Icon name={openKpiId === item.kpiId ? "chevron-up" : "chevron-down"} size={24} color="#666" />
-              </View>
-            </TouchableOpacity>
 
-            {addingSubTo === item.kpiId && (
-              <View style={ss.inlineAdd}>
-                <TextInput placeholder="Sub-KPI Name" style={ss.inlineInput} value={dynamicSub.name} onChangeText={t => setDynamicSub({...dynamicSub, name: t})} />
-                <TextInput placeholder="%" style={[ss.inlineInput, {width: 50}]} keyboardType="numeric" value={dynamicSub.weight} onChangeText={t => setDynamicSub({...dynamicSub, weight: t})} />
-                <TouchableOpacity onPress={() => addDynamicSubKpi(item.kpiId)} style={ss.inlineCheck}>
-                  <Icon name="check" size={20} color="white" />
+                <TouchableOpacity
+                  style={ss.addBtn}
+                  onPress={() => {
+                    if (subName && subWeight) {
+                      setTempSubKpis([
+                        ...tempSubKpis,
+                        { id: Date.now(), name: subName, weight: subWeight },
+                      ]);
+                      setSubName("");
+                      setSubWeight("");
+                    }
+                  }}
+                >
+                  <Text style={ss.addBtnText}>Add to Draft</Text>
                 </TouchableOpacity>
-              </View>
-            )}
 
-            {openKpiId === item.kpiId && (
-              <View style={ss.subList}>
-                {item.subKpis.map(sk => (
-                  <View key={sk.subKpiId} style={ss.subItem}>
-                    <Text style={ss.subName}>{sk.subKpiName}</Text>
-                    <View style={ss.subWeightBadge}>
-                        <Text style={ss.subWeightValue}>{sk.weight}%</Text>
-                    </View>
+                {tempSubKpis.map((s) => (
+                  <View key={s.id} style={ss.draftItem}>
+                    <Text style={ss.draftText}>
+                      {s.name} ({s.weight}%)
+                    </Text>
                   </View>
                 ))}
+
+                <TouchableOpacity
+                  style={ss.saveBtn}
+                  onPress={handleSaveMainKpi}
+                >
+                  <Text style={ss.btnText}>Finalize & Save KPI</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>
-        ))}
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+
+          {/* LIST HEADER */}
+          <View style={ss.listHeader}>
+            <Text style={ss.listTitle}>Live KPI Overview</Text>
+            {loading && <ActivityIndicator size="small" color="#059669" />}
+          </View>
+        </>
+      }
+    />
+  </KeyboardAvoidingView>
+);
 };
+
 
 const ss = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F8FAFC" },
