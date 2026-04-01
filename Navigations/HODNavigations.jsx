@@ -5,7 +5,7 @@ import AddPeerEvaluator from "../Components/HOD/AddPeerEvaluator";
 import AddKPI from "../Components/HOD/AddKPI"
 import CourseManagement from "../Components/HOD/CourseManagement";
 import CHRPointSetting from "../Components/HOD/CHRPointSetting"
-
+import SeePerformance from "../Components/HOD/SeePerformance";
 
 
 const stack = createNativeStackNavigator();
@@ -20,6 +20,7 @@ const HodNavigation = ({onLogout}) => {
             <stack.Screen name="AddKPI" component={AddKPI} options={{ headerShown: false }}  />
             <stack.Screen name="CourseManagement" component={CourseManagement} options={{ headerShown: false }}  />
             <stack.Screen name="CHRPointSetting" component={CHRPointSetting} options={{ headerShown: false }}  />
+            <stack.Screen name="SeePerformance" component={SeePerformance} options={{ headerShown: false }}  />
 
 
 

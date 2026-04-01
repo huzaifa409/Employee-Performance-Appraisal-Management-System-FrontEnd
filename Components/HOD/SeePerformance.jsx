@@ -14,7 +14,7 @@ import BASE_URL from "../../API-URL/API";
 
 const screenWidth = Dimensions.get("window").width;
 
-const PerformanceScreen = ({navigation}) => {
+const PerformanceScreen = () => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
 
@@ -82,14 +82,6 @@ const PerformanceScreen = ({navigation}) => {
           onChange={(item) => setSelectedSession(item.value)}
         />
       </View>
-      <TouchableOpacity
-  style={styles.compareBtn}
-  onPress={() => navigation.navigate("ComparisonScreen")}
->
-  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-    Detailed Comparison
-  </Text>
-</TouchableOpacity>
 
       {/* 🔥 DEPARTMENT TABS */}
       <ScrollView
@@ -274,11 +266,4 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  compareBtn: {
-  backgroundColor: "#2563eb",
-  margin: 15,
-  padding: 12,
-  borderRadius: 10,
-  alignItems: "center",
-},
 });
