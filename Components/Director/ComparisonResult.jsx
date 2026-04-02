@@ -9,11 +9,8 @@ import {
 import { BarChart } from "react-native-gifted-charts";
 import BASE_URL from "../../API-URL/API";
 
-const MAX_POINTS = 4;
-
 const ComparisonResult = ({ route }) => {
-  const { teacherA, teacherB, courseCode, mode, session1, session2 } =
-    route.params;
+  const { teacherA, teacherB, courseCode, mode, session1, session2 } = route.params;
 
   const [dataA, setDataA] = useState(null);
   const [dataB, setDataB] = useState(null);
@@ -40,14 +37,7 @@ const ComparisonResult = ({ route }) => {
       const res = await fetch(`${BASE_URL}/Performance/CompareTeachers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mode,
-          teacherA,
-          teacherB,
-          courseCode,
-          session1,
-          session2,
-        }),
+        body: JSON.stringify({ mode, teacherA, teacherB, courseCode, session1, session2 }),
       });
 
       const data = await res.json();
@@ -60,14 +50,12 @@ const ComparisonResult = ({ route }) => {
     }
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
-  }
+  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 50 }} />;
 
   const winner =
-    dataA?.Percentage > dataB?.Percentage
+    dataA?.OverallAverageOutOfHundred > dataB?.OverallAverageOutOfHundred
       ? dataA.Name
-      : dataB?.Percentage > dataA?.Percentage
+      : dataB?.OverallAverageOutOfHundred > dataA?.OverallAverageOutOfHundred
       ? dataB.Name
       : "Tie";
 
@@ -84,18 +72,18 @@ const ComparisonResult = ({ route }) => {
 
   // Chart 1: Evaluation breakdown
   const chartData = [
-    { value: dataA?.Peer || 0, label: "Peer", frontColor: "#22c55e" },
-    { value: dataB?.Peer || 0, label: "Peer", frontColor: "#f87171" },
-    { value: dataA?.Student || 0, label: "Student", frontColor: "#16a34a" },
-    { value: dataB?.Student || 0, label: "Student", frontColor: "#ef4444" },
-    { value: dataA?.Percentage || 0, label: "Final %", frontColor: "#065f46" },
-    { value: dataB?.Percentage || 0, label: "Final %", frontColor: "#7f1d1d" },
+    { value: dataA?.PeerAverageOutOfTen || 0, label: "Peer", frontColor: "#22c55e" },
+    { value: dataB?.PeerAverageOutOfTen || 0, label: "Peer", frontColor: "#f87171" },
+    { value: dataA?.StudentAverageOutOfTen || 0, label: "Student", frontColor: "#16a34a" },
+    { value: dataB?.StudentAverageOutOfTen || 0, label: "Student", frontColor: "#ef4444" },
+    { value: dataA?.OverallAverageOutOfHundred || 0, label: "Overall %", frontColor: "#065f46" },
+    { value: dataB?.OverallAverageOutOfHundred || 0, label: "Overall %", frontColor: "#7f1d1d" },
   ];
 
-  // Chart 2: Final % only
+  // Chart 2: Overall % only
   const finalChartData = [
-    { value: dataA?.Percentage || 0, label: codeA, frontColor: "#2563eb" },
-    { value: dataB?.Percentage || 0, label: codeB, frontColor: "#dc2626" },
+    { value: dataA?.OverallAverageOutOfHundred || 0, label: codeA, frontColor: "#2563eb" },
+    { value: dataB?.OverallAverageOutOfHundred || 0, label: codeB, frontColor: "#dc2626" },
   ];
 
   return (
@@ -114,34 +102,44 @@ const ComparisonResult = ({ route }) => {
       <View style={styles.row}>
         <View style={styles.card}>
           <Text style={styles.name}>{labelA}</Text>
-          <Text style={styles.label}>Peer Score</Text>
+
+          <Text style={styles.label}>Peer Average (out of 10)</Text>
           <Text style={styles.value}>
-            {dataA?.Peer?.toFixed(2) || "0"} / {MAX_POINTS}
+            {dataA?.PeerAverageOutOfTen?.toFixed(2) || "0"} / 10
           </Text>
-          <Text style={styles.label}>Student Score</Text>
+
+          <Text style={styles.label}>Student Average (out of 10)</Text>
           <Text style={styles.value}>
-            {dataA?.Student?.toFixed(2) || "0"} / {MAX_POINTS}
+            {dataA?.StudentAverageOutOfTen?.toFixed(2) || "0"} / 10
           </Text>
-          <Text style={styles.label}>Final %</Text>
-          <Text style={styles.percent}>{dataA?.Percentage?.toFixed(2)}%</Text>
+
+          <Text style={styles.label}>Overall Average (out of 100)</Text>
+          <Text style={styles.percent}>
+            {dataA?.OverallAverageOutOfHundred?.toFixed(2) || "0"}%
+          </Text>
         </View>
 
         <View style={styles.card}>
           <Text style={styles.name}>{labelB}</Text>
-          <Text style={styles.label}>Peer Score</Text>
+
+          <Text style={styles.label}>Peer Average (out of 10)</Text>
           <Text style={styles.value}>
-            {dataB?.Peer?.toFixed(2) || "0"} / {MAX_POINTS}
+            {dataB?.PeerAverageOutOfTen?.toFixed(2) || "0"} / 10
           </Text>
-          <Text style={styles.label}>Student Score</Text>
+
+          <Text style={styles.label}>Student Average (out of 10)</Text>
           <Text style={styles.value}>
-            {dataB?.Student?.toFixed(2) || "0"} / {MAX_POINTS}
+            {dataB?.StudentAverageOutOfTen?.toFixed(2) || "0"} / 10
           </Text>
-          <Text style={styles.label}>Final %</Text>
-          <Text style={styles.percent}>{dataB?.Percentage?.toFixed(2)}%</Text>
+
+          <Text style={styles.label}>Overall Average (out of 100)</Text>
+          <Text style={styles.percent}>
+            {dataB?.OverallAverageOutOfHundred?.toFixed(2) || "0"}%
+          </Text>
         </View>
       </View>
 
-      {/* CHART 1: Evaluation Breakdown */}
+      {/* CHART 1 */}
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Performance Breakdown</Text>
         <BarChart
@@ -152,11 +150,10 @@ const ComparisonResult = ({ route }) => {
           hideRules
           yAxisThickness={0}
           xAxisThickness={0}
-          // showLine
           initialSpacing={10}
           stackBars={false}
           xAxisLabelTextStyle={{ fontSize: 10 }}
-          renderTopLabel={(item) => null}
+          renderTopLabel={() => null}
           xAxisLabelRotation={-45}
         />
 
@@ -180,18 +177,18 @@ const ComparisonResult = ({ route }) => {
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.colorBox, { backgroundColor: "#065f46" }]} />
-            <Text style={styles.legendText}>Final % {codeA}</Text>
+            <Text style={styles.legendText}>Overall % {codeA}</Text>
           </View>
           <View style={styles.legendItem}>
             <View style={[styles.colorBox, { backgroundColor: "#7f1d1d" }]} />
-            <Text style={styles.legendText}>Final % {codeB}</Text>
+            <Text style={styles.legendText}>Overall % {codeB}</Text>
           </View>
         </View>
       </View>
 
-      {/* CHART 2: Final Result % */}
+      {/* CHART 2 */}
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Final Result %</Text>
+        <Text style={styles.chartTitle}>Overall Result %</Text>
         <BarChart
           data={finalChartData}
           barWidth={50}
