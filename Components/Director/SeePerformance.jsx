@@ -82,14 +82,7 @@ const PerformanceScreen = ({navigation}) => {
           onChange={(item) => setSelectedSession(item.value)}
         />
       </View>
-      <TouchableOpacity
-  style={styles.compareBtn}
-  onPress={() => navigation.navigate("ComparisonScreen")}
->
-  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-    Detailed Comparison
-  </Text>
-</TouchableOpacity>
+      
 
       {/* 🔥 DEPARTMENT TABS */}
       <ScrollView
@@ -132,9 +125,18 @@ const PerformanceScreen = ({navigation}) => {
       {/* 🔥 GRAPH */}
       {teachers.length > 0 && (
         <View style={styles.chartCard}>
+          <TouchableOpacity
+  style={styles.compareBtn}
+  onPress={() => navigation.navigate("ComparisonScreen")}
+>
+  <Text style={{ color: "#fff", fontWeight: "bold" }}>
+    Detailed Comparison
+  </Text>
+</TouchableOpacity>
           <Text style={styles.chartTitle}>Teacher Performance Comparison</Text>
 
           <BarChart
+          
             data={chartData}
             width={screenWidth - 30}
             height={220}
@@ -147,6 +149,8 @@ const PerformanceScreen = ({navigation}) => {
             xAxisLabelTextStyle={{ color: "#333", fontWeight: "bold" }}
             roundedTop
           />
+
+          
         </View>
       )}
 
@@ -231,6 +235,7 @@ const styles = StyleSheet.create({
   },
 
   chartCard: {
+    alignItems:"flex-end",
     backgroundColor: "#fff",
     margin: 15,
     padding: 10,
@@ -241,6 +246,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontWeight: "bold",
     marginBottom: 10,
+    alignSelf:"center"
   },
 
   card: {
@@ -275,10 +281,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   compareBtn: {
-  backgroundColor: "#2563eb",
-  margin: 15,
-  padding: 12,
-  borderRadius: 10,
+  backgroundColor: "#3c6eb9",
+  margin: 8,
+  width:150,
+  padding: 8,
+  borderRadius: 19,
   alignItems: "center",
 },
 });

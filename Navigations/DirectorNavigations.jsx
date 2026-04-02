@@ -11,6 +11,7 @@ import CreateEvaluationQuestionaire from "../Components/Director/CreateEvaluatio
 import EditEvaluationQuestionnaire from "../Components/Director/EditEvaluationQuestionnaire"
 import EmailSettings from "../Components/Director/EmailSettings"
 import ComparisonScreen from "../Components/Director/ComparisonScreen"
+import ComparisonResult from "../Components/Director/ComparisonResult"
 
 const Stack = createNativeStackNavigator();
 
@@ -66,6 +67,11 @@ const DirectorNavigation = ({ onLogout }) => {
       <Stack.Screen
         name="ComparisonScreen"
         component={ComparisonScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ComparisonResult"
+        component={ComparisonResult}
         options={{ headerShown: false }}
       />
 
