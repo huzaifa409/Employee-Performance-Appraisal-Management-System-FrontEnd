@@ -36,7 +36,7 @@ const HodDashboard = ({ navigation, route }) => {
         </Text>
       </View>
 
-      
+
 
       <View style={ss.statRow}>
 
@@ -111,7 +111,7 @@ const HodDashboard = ({ navigation, route }) => {
 
       <TouchableOpacity
         style={[ss.row, { backgroundColor: '#fdebd3', borderColor: '#fde68a' }]}
-        onPress={()=>navigation.navigate("SeePerformance")}
+        onPress={() => navigation.navigate("SeePerformance")}
       >
         <View style={[ss.iconBox, { backgroundColor: '#ea8501' }]}>
           <Icon name="bar-chart" size={24} color="#fff" />
@@ -140,6 +140,25 @@ const HodDashboard = ({ navigation, route }) => {
         </View>
 
         <Icon name="chevron-right" size={26} color="blue" />
+      </TouchableOpacity>
+
+
+      <TouchableOpacity
+        style={[ss.row, { backgroundColor: '#e6f7f1', borderColor: '#a7e3d0' }]}
+        onPress={() => navigation.navigate("ManageSocieties")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: '#0f766e' }]}>
+          <Icon name="apartment" size={24} color="#fff" />
+        </View>
+
+        <View style={ss.textBlock}>
+          <Text style={ss.rowTitle}>Society Management</Text>
+          <Text style={ss.rowDesc}>
+            Manage societies, chairpersons and mentors
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#0f766e" />
       </TouchableOpacity>
 
 
