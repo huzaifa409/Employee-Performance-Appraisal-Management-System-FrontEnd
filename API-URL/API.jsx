@@ -1,3 +1,3 @@
-const BASE_URL = "http://10.102.161.247/FYP/api";
+const BASE_URL = "http://192.168.43.247/FYP/api";
 
 export default BASE_URL;

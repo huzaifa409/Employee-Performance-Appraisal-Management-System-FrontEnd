@@ -14,7 +14,7 @@ import BASE_URL from "../../API-URL/API";
 
 const screenWidth = Dimensions.get("window").width;
 
-const PerformanceScreen = ({navigation}) => {
+const PerformanceScreen = ({ navigation }) => {
   const [sessions, setSessions] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
 
@@ -82,7 +82,7 @@ const PerformanceScreen = ({navigation}) => {
           onChange={(item) => setSelectedSession(item.value)}
         />
       </View>
-      
+
 
       {/* 🔥 DEPARTMENT TABS */}
       <ScrollView
@@ -126,17 +126,17 @@ const PerformanceScreen = ({navigation}) => {
       {teachers.length > 0 && (
         <View style={styles.chartCard}>
           <TouchableOpacity
-  style={styles.compareBtn}
-  onPress={() => navigation.navigate("ComparisonScreen")}
->
-  <Text style={{ color: "#fff", fontWeight: "bold" }}>
-    Detailed Comparison
-  </Text>
-</TouchableOpacity>
+            style={styles.compareBtn}
+            onPress={() => navigation.navigate("ComparisonScreen")}
+          >
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              Detailed Comparison
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.chartTitle}>Teacher Performance Comparison</Text>
 
           <BarChart
-          
+
             data={chartData}
             width={screenWidth - 30}
             height={220}
@@ -150,7 +150,7 @@ const PerformanceScreen = ({navigation}) => {
             roundedTop
           />
 
-          
+
         </View>
       )}
 
@@ -167,7 +167,15 @@ const PerformanceScreen = ({navigation}) => {
 
             <Text style={styles.course}>{item.CourseCode}</Text>
 
-            <TouchableOpacity style={styles.btn}>
+            <TouchableOpacity style={styles.btn}  onPress={() =>
+                navigation.navigate("CoursePerformanceScreen", {
+                  teacherId: item.TeacherID,
+                  courseCode: item.CourseCode,
+                  sessionId: selectedSession,
+                })
+              }>
+
+              
               <Text style={{ color: "#fff" }}>View Performance</Text>
             </TouchableOpacity>
           </View>
@@ -235,7 +243,7 @@ const styles = StyleSheet.create({
   },
 
   chartCard: {
-    alignItems:"flex-end",
+    alignItems: "flex-end",
     backgroundColor: "#fff",
     margin: 15,
     padding: 10,
@@ -246,7 +254,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontWeight: "bold",
     marginBottom: 10,
-    alignSelf:"center"
+    alignSelf: "center"
   },
 
   card: {
@@ -281,11 +289,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   compareBtn: {
-  backgroundColor: "#3c6eb9",
-  margin: 8,
-  width:150,
-  padding: 8,
-  borderRadius: 19,
-  alignItems: "center",
-},
+    backgroundColor: "#3c6eb9",
+    margin: 8,
+    width: 150,
+    padding: 8,
+    borderRadius: 19,
+    alignItems: "center",
+  },
 });
