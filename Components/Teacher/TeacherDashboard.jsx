@@ -14,6 +14,7 @@ import BASE_URL from "../../API-URL/API";
 const TeacherDashboard = ({ navigation, userId, onLogout }) => {
   const [flag, setFlag] = useState(0);
   const [evaluationType, setEvaluationType] = useState("");
+  const [isAllowed, setIsAllowed] = useState(false);
   const [teacherName, setTeacherName] = useState("");
 
   console.log("Teacher UserID:", userId);
@@ -28,6 +29,23 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
   ];
 
   /* ================= FETCH TEACHER NAME ================= */
+
+
+  const checkIsAllowed = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetPeerEvaluatorID?userId=${userId}`
+      );
+
+      const data = await response.json();
+
+      setIsAllowed(data?.isAllowed === true);
+
+    } catch (error) {
+      console.error(error);
+      setIsAllowed(false);
+    }
+  };
   const fetchTeacherName = async () => {
     try {
       const response = await fetch(
@@ -48,33 +66,44 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
 
   /* ================= CHECK EVALUATOR ================= */
   /* ================= CHECK EVALUATOR AND FETCH PEEREVALUATOR ID ================= */
-/* ================= CHECK EVALUATOR AND FETCH PEEREVALUATOR ID ================= */
-const checkEvaluatorAndProceed = async () => {
-  try {
-    const response = await fetch(
-      `${BASE_URL}/TeacherDashboard/GetPeerEvaluatorID?userId=${userId}`
-    );
-
-    const data = await response.json();
-
-    if (!data?.peerEvaluatorID) {
-      Alert.alert(
-        "Access Denied",
-        "You are not an evaluator and cannot perform peer evaluation"
+  /* ================= CHECK EVALUATOR AND FETCH PEEREVALUATOR ID ================= */
+  const checkEvaluatorAndProceed = async () => {
+    try {
+      const response = await fetch(
+        `${BASE_URL}/TeacherDashboard/GetPeerEvaluatorID?userId=${userId}`
       );
-      return;
+
+      const data = await response.json();
+
+      // 1. Not allowed case
+      if (!data?.isAllowed) {
+        Alert.alert(
+          "Access Denied",
+          "You are not allowed to perform peer evaluation"
+        );
+        return;
+      }
+
+      // 2. Allowed but no evaluator ID (edge case)
+      if (!data?.peerEvaluatorID) {
+        Alert.alert(
+          "Info",
+          "You are allowed but not assigned as a session evaluator"
+        );
+        return;
+      }
+
+      // 3. Success → navigate
+      navigation.navigate("TeachersCoursesScreen", {
+        evaluatorID: data.peerEvaluatorID,
+        source: data.source, // optional but useful
+      });
+
+    } catch (error) {
+      console.error("Evaluator check error:", error);
+      Alert.alert("Error", "Unable to verify evaluator status");
     }
-
-    // Send peerEvaluatorID to the next screen
-    navigation.navigate("TeachersCoursesScreen", {
-      evaluatorID: data.peerEvaluatorID, // This is the PeerEvaluator.id now
-    });
-  } catch (error) {
-    console.error(error);
-    Alert.alert("Error", "Unable to verify evaluator status");
-  }
-};
-
+  };
 
 
   /* ================= FETCH ACTIVE QUESTIONNAIRE ================= */
@@ -110,6 +139,7 @@ const checkEvaluatorAndProceed = async () => {
   useEffect(() => {
     fetchTeacherName();
     fetchActiveQuestionnaire();
+    checkIsAllowed();
   }, []);
 
   return (
@@ -134,13 +164,14 @@ const checkEvaluatorAndProceed = async () => {
       {/* ================= PEER EVALUATION BUTTON ================= */}
       <View>
         <TouchableOpacity
-          disabled={flag !== 1}
+          disabled={!(flag === 1 && isAllowed)}
           style={{
             padding: 10,
             margin: 10,
-            backgroundColor: flag === 1 ? "#249551" : "#B0B0B0",
+            backgroundColor: (flag === 1 && isAllowed) ? "#249551" : "#B0B0B0",
+            opacity: (flag === 1 && isAllowed) ? 1 : 0.6,
             borderRadius: 7,
-            opacity: flag === 1 ? 1 : 0.6,
+
           }}
           onPress={() => {
             if (flag === 1) {
@@ -185,7 +216,7 @@ const checkEvaluatorAndProceed = async () => {
       <Text style={styles.score}>89%</Text>
       <Text style={styles.scoreLabel}>Overall Performance Score</Text>
 
-      
+
       <Text style={styles.sectionTitle}>Performance Sections</Text>
 
       <TouchableOpacity
@@ -227,9 +258,9 @@ const checkEvaluatorAndProceed = async () => {
         <Icon name="chevron-right" size={26} color="#2563eb" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.block, styles.blockOrange]} 
-      
-       onPress={() => navigation.navigate("SeeOwnPerformance", { username: teacherName, userId:userId })}>
+      <TouchableOpacity style={[styles.block, styles.blockOrange]}
+
+        onPress={() => navigation.navigate("SeeOwnPerformance", { username: teacherName, userId: userId })}>
         <View style={[styles.iconBox, { backgroundColor: "#ea580c" }]}>
           <Icon name="analytics" size={24} color="#fff" />
         </View>
@@ -241,17 +272,17 @@ const checkEvaluatorAndProceed = async () => {
       </TouchableOpacity>
 
       {/* ================= LOGOUT ================= */}
-      <TouchableOpacity 
-        style={styles.logout} 
+      <TouchableOpacity
+        style={styles.logout}
         onPress={() => {
           Alert.alert(
             "Logout",
             "Are you sure you want to log out?",
             [
               { text: "Cancel", style: "cancel" },
-              { 
-                text: "Logout", 
-                style: "destructive", 
+              {
+                text: "Logout",
+                style: "destructive",
                 onPress: () => onLogout() // Calls the function passed from App.js/Navigation
               }
             ]

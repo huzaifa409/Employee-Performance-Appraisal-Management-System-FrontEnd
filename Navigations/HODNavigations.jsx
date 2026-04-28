@@ -17,11 +17,11 @@ import AssignMentors from "../Components/HOD/AssignMentor";
 const stack = createNativeStackNavigator();
 
 
-const HodNavigation = ({ onLogout }) => {
+const HodNavigation = ({ onLogout ,userId  }) => {
     return (
         <stack.Navigator initialRouteName="HodDashboard">
 
-            <stack.Screen name="HodDashboard" component={HODDashboard} options={{ headerShown: false }} initialParams={{ onLogout }} />
+            <stack.Screen name="HodDashboard" component={HODDashboard} options={{ headerShown: false }} initialParams={{ onLogout, userId }} />
             <stack.Screen name="AddPeerEvaluator" component={AddPeerEvaluator} options={{ headerShown: false }} />
             <stack.Screen name="AddKPI" component={AddKPI} options={{ headerShown: false }} />
             <stack.Screen name="CourseManagement" component={CourseManagement} options={{ headerShown: false }} />

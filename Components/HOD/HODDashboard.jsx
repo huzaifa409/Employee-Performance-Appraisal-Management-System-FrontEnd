@@ -5,6 +5,8 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 const HodDashboard = ({ navigation, route }) => {
 
   const { onLogout } = route.params;
+  const { userId } = route.params;
+  console.log("USER ID:", userId);
 
   const handleLogout = () => {
     onLogout();
@@ -94,7 +96,9 @@ const HodDashboard = ({ navigation, route }) => {
 
       <TouchableOpacity
         style={[ss.row, { backgroundColor: '#f6e4fa', borderColor: '#e9d5ff' }]}
-        onPress={() => navigation.navigate("CourseManagement")}
+        onPress={() =>
+          navigation.navigate("CourseManagement", { userId: userId })
+        }
       >
         <View style={[ss.iconBox, { backgroundColor: '#c40bf7' }]}>
           <Icon name="checklist" size={24} color="#fff" />

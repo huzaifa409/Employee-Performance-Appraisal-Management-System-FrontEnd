@@ -12,20 +12,21 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
 import EvaluateTeacherModal from "./EvaluateTeacherModal";
 
-const CourseManagement = () => {
+const CourseManagement = ({ route }) => {
+
+    const { userId } = route.params;
 
     const [sessions, setSessions] = useState([]);
     const [selectedSession, setSelectedSession] = useState(null);
 
-    // raw API courses
     const [courses, setCourses] = useState([]);
 
-    // modal state
     const [showModal, setShowModal] = useState(false);
-    const [selectedTeacher, setSelectedTeacher] = useState("");
-    const [teacherSubjects, setTeacherSubjects] = useState([]);
 
-    /* ---------------- LOAD SESSIONS ---------------- */
+    // IMPORTANT: store teacher object properly
+    const [selectedTeacher, setSelectedTeacher] = useState(null);
+
+    const [teacherSubjects, setTeacherSubjects] = useState([]);
 
     useEffect(() => {
         getSessions();
@@ -44,54 +45,50 @@ const CourseManagement = () => {
             const res = await fetch(`${BASE_URL}/PeerEvaluator/Sessions`);
             const data = await res.json();
 
-            const formatted = data.map(s => ({
+            setSessions(data.map(s => ({
                 label: s.name,
                 value: s.id,
-            }));
+            })));
 
-            setSessions(formatted);
         } catch (err) {
-            console.log("Session error:", err);
+            console.log(err);
         }
     };
-
-    /* ---------------- LOAD COURSES ---------------- */
 
     const getEnrollmentCourses = async (sessionId) => {
         try {
             const res = await fetch(
-                `${BASE_URL}/CourseManagement/EnrollmentCourses/sessionId?sessionId=${sessionId}`
+                `${BASE_URL}/CourseManagement/EnrollmentCourses/${sessionId}`
             );
 
             const data = await res.json();
             setCourses(data);
 
         } catch (err) {
-            console.log("Enrollment fetch error:", err);
+            console.log(err);
         }
     };
 
-    /* ---------------- GROUP COURSES BY TEACHER ---------------- */
-
+    // ✅ FIXED GROUPING (IMPORTANT: teacher is object now)
     const groupedByTeacher = Object.values(
-        courses.reduce((acc, item) => {
-            if (!acc[item.teacher]) {
-                acc[item.teacher] = {
-                    teacher: item.teacher,
-                    subjects: [],
-                };
-            }
+    courses.reduce((acc, item) => {
 
-            acc[item.teacher].subjects.push({
-                course: item.course,
-                code: item.code,
-            });
+        if (!acc[item.teacher]) {
+            acc[item.teacher] = {
+                teacher: item.teacher,
+                teacherID: item.teacherID || item.teacherId, // MUST come from backend
+                subjects: [],
+            };
+        }
 
-            return acc;
-        }, {})
-    );
+        acc[item.teacher].subjects.push({
+            course: item.course,
+            code: item.code,
+        });
 
-    /* ---------------- COURSE CARD ---------------- */
+        return acc;
+    }, {})
+);
 
     const renderTeacherCard = ({ item }) => (
         <View style={ss.card}>
@@ -111,7 +108,7 @@ const CourseManagement = () => {
             <TouchableOpacity
                 style={ss.actionBtn}
                 onPress={() => {
-                    setSelectedTeacher(item.teacher);
+                    setSelectedTeacher(item);
                     setTeacherSubjects(item.subjects);
                     setShowModal(true);
                 }}
@@ -123,63 +120,54 @@ const CourseManagement = () => {
         </View>
     );
 
-    /* ---------------- HEADER ---------------- */
-
-    const ListHeader = () => (
-        <>
-            <View style={ss.header}>
-                <View>
-                    <Text style={ss.headerTitle}>Course Management</Text>
-                    <Text style={ss.headerSubtitle}>
-                        Evaluate Course Submission and Academic Responsibilities
-                    </Text>
-                </View>
-
-                <View style={ss.logoheader}>
-                    <Image
-                        source={require("../../Assets/BIIT_logo.png")}
-                        style={ss.logo}
-                        resizeMode="contain"
-                    />
-                </View>
-            </View>
-
-            <Dropdown
-                style={ss.dropdown}
-                data={sessions}
-                labelField="label"
-                valueField="value"
-                placeholder="Select Session"
-                value={selectedSession}
-                onChange={item => setSelectedSession(item.value)}
-                renderLeftIcon={() => (
-                    <Icon name="calendar-today" size={20} color="#4CAF50" />
-                )}
-            />
-        </>
-    );
-
     return (
         <>
             <FlatList
                 data={groupedByTeacher}
                 keyExtractor={(item, index) => index.toString()}
                 renderItem={renderTeacherCard}
-                ListHeaderComponent={ListHeader}
-                ListEmptyComponent={
-                    <Text style={ss.emptyText}>
-                        Select a session to load courses
-                    </Text>
-                }
-                contentContainerStyle={{ paddingBottom: 40 }}
-                style={{ backgroundColor: "#EDF4EE" }}
+                ListHeaderComponent={() => (
+                    <>
+                        <View style={ss.header}>
+                            <View>
+                                <Text style={ss.headerTitle}>Course Management</Text>
+                                <Text style={ss.headerSubtitle}>
+                                    Evaluate Course Submission and Academic Responsibilities
+                                </Text>
+                            </View>
+
+                            <View style={ss.logoheader}>
+                                <Image
+                                    source={require("../../Assets/BIIT_logo.png")}
+                                    style={ss.logo}
+                                    resizeMode="contain"
+                                />
+                            </View>
+                        </View>
+
+                        <Dropdown
+                            style={ss.dropdown}
+                            data={sessions}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Session"
+                            value={selectedSession}
+                            onChange={item => setSelectedSession(item.value)}
+                            renderLeftIcon={() => (
+                                <Icon name="calendar-today" size={20} color="#4CAF50" />
+                            )}
+                        />
+                    </>
+                )}
             />
 
-            {/* ---------- EVALUATION MODAL ---------- */}
+            {/* ✅ FULLY CONNECTED MODAL */}
             <EvaluateTeacherModal
                 visible={showModal}
                 teacher={selectedTeacher}
                 subjects={teacherSubjects}
+                sessionId={selectedSession}
+                userId={userId}
                 onClose={() => setShowModal(false)}
             />
         </>
