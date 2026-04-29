@@ -97,6 +97,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
       navigation.navigate("TeachersCoursesScreen", {
         evaluatorID: data.peerEvaluatorID,
         source: data.source, // optional but useful
+        userId: userId
       });
 
     } catch (error) {
@@ -247,16 +248,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         <Icon name="chevron-right" size={26} color="#16a34a" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.block, styles.blockBlue]}>
-        <View style={[styles.iconBox, { backgroundColor: "#2563eb" }]}>
-          <Icon name="groups" size={24} color="#fff" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.blockTitle}>Society Mentors</Text>
-          <Text style={styles.blockDesc}>Evaluate society mentors</Text>
-        </View>
-        <Icon name="chevron-right" size={26} color="#2563eb" />
-      </TouchableOpacity>
+     
 
       <TouchableOpacity style={[styles.block, styles.blockOrange]}
 
@@ -270,6 +262,25 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         </View>
         <Icon name="chevron-right" size={26} color="#ea580c" />
       </TouchableOpacity>
+
+
+      <TouchableOpacity
+  style={[styles.block, styles.blockPink]}
+  onPress={() => navigation.navigate("SocietyEvaluationScreen", {userId: userId })}
+>
+  <View style={[styles.iconBox, { backgroundColor: "#db2777" }]}>
+    <Icon name="diversity-3" size={24} color="#fff" />
+  </View>
+
+  <View style={{ flex: 1 }} >
+    <Text style={styles.blockTitle}>Evaluate Society Members</Text>
+    <Text style={styles.blockDesc}>
+      Evaluate members based on performance
+    </Text>
+  </View>
+
+  <Icon name="chevron-right" size={26} color="#db2777" />
+</TouchableOpacity>
 
       {/* ================= LOGOUT ================= */}
       <TouchableOpacity
@@ -412,4 +423,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: { color: "#fff", fontWeight: "700" },
+  blockPink: {
+  backgroundColor: "#fdf2f8",
+  borderColor: "#fbcfe8",
+},
 });

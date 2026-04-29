@@ -165,6 +165,28 @@ const HodDashboard = ({ navigation, route }) => {
         <Icon name="chevron-right" size={26} color="#0f766e" />
       </TouchableOpacity>
 
+<TouchableOpacity
+  style={[ss.row, { backgroundColor: '#eef2ff', borderColor: '#c7d2fe' }]}
+  onPress={() =>
+    navigation.navigate("EvaluateSocietyChairPerson", {
+      userId: userId
+    })
+  }
+>
+  <View style={[ss.iconBox, { backgroundColor: '#4f46e5' }]}>
+    <Icon name="supervisor-account" size={24} color="#fff" />
+  </View>
+
+  <View style={ss.textBlock}>
+    <Text style={ss.rowTitle}>Evaluate Society Chairperson</Text>
+    <Text style={ss.rowDesc}>
+      Evaluate chairperson performance in societies
+    </Text>
+  </View>
+
+  <Icon name="chevron-right" size={26} color="#4f46e5" />
+</TouchableOpacity>
+
 
       {/* LOGOUT */}
 

@@ -8,6 +8,8 @@ import ViewCHRDetails from "../Components/Teacher/ViewCHRDetails"
 import TeachersCoursesScreen from "../Components/Teacher/TeacherCourseScreen"
 import PeerEvaluationScreen from "../Components/Teacher/PeerEvaluationScreen"
 import SeeOwnPerformance from "../Components/Teacher/SeeOwnPerformance"
+import SocietyEvaluationScreen from "../Components/Teacher/SocietyEvaluationScreen"
+import MentorEvaluationForm from "../Components/Teacher/MentorEvaluationForm"
 
 
 
@@ -54,6 +56,16 @@ const TeacherNavigation = ({ userId, onLogout }) => {
       <stack.Screen
         name="SeeOwnPerformance"
         component={SeeOwnPerformance}
+        options={{ headerShown: false }}
+      />
+      <stack.Screen
+        name="SocietyEvaluationScreen"
+        component={SocietyEvaluationScreen}
+        options={{ headerShown: false }}
+      />
+      <stack.Screen
+        name="MentorEvaluationForm"
+        component={MentorEvaluationForm}
         options={{ headerShown: false }}
       />
     </stack.Navigator>

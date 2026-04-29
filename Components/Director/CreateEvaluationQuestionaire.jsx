@@ -20,6 +20,8 @@ const CreateEvaluationQuestionaire = () => {
         { label: "Course Evaluation", value: 2, typeText: "Course Evaluation" },
         { label: "Peer Evaluation", value: 3, typeText: "Peer Evaluation" },
         { label: "Student Evaluation", value: 4, typeText: "Student Evaluation" },
+        { label: "Society Mentor Evaluation", value: 5, typeText: "Society Mentor Evaluation" },
+        { label: "Society ChairPerson Evaluation", value: 6, typeText: "Society ChairPerson Evaluation" },
     ]);
 
 

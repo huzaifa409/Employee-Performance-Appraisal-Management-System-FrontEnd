@@ -10,6 +10,8 @@ import ManageSocieties from "../Components/HOD/ManageSocieties";
 import SocietyDetails from "../Components/HOD/SocietyDetails";
 import AssignChairperson from "../Components/HOD/AssignChairPerson";
 import AssignMentors from "../Components/HOD/AssignMentor";
+import EvaluateSocietyChairPerson from "../Components/HOD/EvaluateSocietyChairPerson"
+import EvaluateChairPersonForm from "../Components/HOD/EvaluateChairPersonForm"
 
 
 
@@ -31,6 +33,8 @@ const HodNavigation = ({ onLogout ,userId  }) => {
             <stack.Screen name="SocietyDetails" component={SocietyDetails}options={{ headerShown: false }}/>
             <stack.Screen name="AssignChairperson" component={AssignChairperson}options={{ headerShown: false }}/>
             <stack.Screen name="AssignMentors" component={AssignMentors}options={{ headerShown: false }}/>
+            <stack.Screen name="EvaluateSocietyChairPerson" component={EvaluateSocietyChairPerson}options={{ headerShown: false }}/>
+            <stack.Screen name="EvaluateChairPersonForm" component={EvaluateChairPersonForm}options={{ headerShown: false }}/>
 
 
 

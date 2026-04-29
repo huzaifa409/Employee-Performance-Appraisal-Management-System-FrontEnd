@@ -12,12 +12,14 @@ import BASE_URL from "../../API-URL/API";
 
 const TeachersCoursesScreen = ({ navigation, route }) => {
   const { evaluatorID } = route.params;
+  const {userId}=route.params;
+  
   const [data, setData] = useState([]);
   const [submitted, setSubmitted] = useState({}); // track submitted courses
 
   const fetchTeachersCourses = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/TeacherDashboard/GetTeachersWithCourses`);
+      const response = await fetch(`${BASE_URL}/TeacherDashboard/GetTeachersWithCourses?userId=${userId}`);
       const result = await response.json();
       setData(result);
     } catch (error) {
