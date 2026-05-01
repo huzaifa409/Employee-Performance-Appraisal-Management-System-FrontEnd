@@ -18,6 +18,7 @@ const EmailSettings = ({ navigation }) => {
   const [emails, setEmails] = useState([]);
   const [activeEmail, setActiveEmail] = useState(null);
   const [newEmail, setNewEmail] = useState("");
+  const [password, setPassword] = useState(""); // ✅ NEW
 
   useEffect(() => {
     fetchEmails();
@@ -51,12 +52,17 @@ const EmailSettings = ({ navigation }) => {
   };
 
   // =============================
-  // ADD EMAIL
+  // ADD EMAIL + PASSWORD
   // =============================
   const addEmail = async () => {
 
-    if (newEmail.trim() === "") {
-      Alert.alert("Error", "Please enter email");
+    if (newEmail.trim() === "" || password.trim() === "") {
+      Alert.alert("Error", "Please enter email and app password");
+      return;
+    }
+
+    if (password.length !== 16) {
+      Alert.alert("Error", "App password must be 16 characters");
       return;
     }
 
@@ -68,10 +74,12 @@ const EmailSettings = ({ navigation }) => {
         },
         body: JSON.stringify({
           mail: newEmail,
+          password: password,
         }),
       });
 
       setNewEmail("");
+      setPassword("");
       fetchEmails();
 
     } catch (err) {
@@ -83,9 +91,7 @@ const EmailSettings = ({ navigation }) => {
   // ACTIVATE EMAIL
   // =============================
   const activateEmail = async (id) => {
-
     try {
-
       await fetch(`${BASE_URL}/email/activate/${id}`, {
         method: "PUT",
       });
@@ -102,9 +108,7 @@ const EmailSettings = ({ navigation }) => {
   // DEACTIVATE EMAIL
   // =============================
   const deactivateEmail = async (id) => {
-
     try {
-
       await fetch(`${BASE_URL}/email/deactivate/${id}`, {
         method: "PUT",
       });
@@ -121,18 +125,14 @@ const EmailSettings = ({ navigation }) => {
   // DELETE EMAIL
   // =============================
   const deleteEmail = async (id) => {
-
     Alert.alert(
       "Delete Email",
       "Are you sure you want to delete?",
       [
-        {
-          text: "Cancel",
-        },
+        { text: "Cancel" },
         {
           text: "Delete",
           onPress: async () => {
-
             await fetch(`${BASE_URL}/email/delete/${id}`, {
               method: "DELETE",
             });
@@ -149,7 +149,6 @@ const EmailSettings = ({ navigation }) => {
   // TOGGLE SWITCH
   // =============================
   const toggleEmail = (item) => {
-
     if (item.isActive) {
       deactivateEmail(item.id);
     } else {
@@ -158,7 +157,6 @@ const EmailSettings = ({ navigation }) => {
   };
 
   return (
-
     <ScrollView style={ss.container}>
 
       {/* HEADER */}
@@ -188,11 +186,26 @@ const EmailSettings = ({ navigation }) => {
         <Text style={ss.sectionTitle}>Add New Recipient</Text>
 
         <TextInput
-          placeholder="example@university.edu"
+          placeholder="example@gmail.com"
           style={ss.input}
           value={newEmail}
           onChangeText={setNewEmail}
+           placeholderTextColor={'black'}
         />
+
+        <TextInput
+          placeholder="Enter App Password (16 characters)"
+          style={ss.input}
+          value={password}
+          onChangeText={setPassword}
+          // secureTextEntry={true}
+          placeholderTextColor={'black'}
+        />
+
+        {/* Helper Text */}
+        <Text style={ss.helperText}>
+          Use Gmail App Password (not your Gmail login password)
+        </Text>
 
         <TouchableOpacity style={ss.addBtn} onPress={addEmail}>
           <Text style={ss.addBtnText}>Add Email</Text>
@@ -206,7 +219,6 @@ const EmailSettings = ({ navigation }) => {
         data={emails}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-
           <View style={ss.emailRow}>
 
             <Text style={ss.emailText}>{item.mail}</Text>
@@ -220,14 +232,11 @@ const EmailSettings = ({ navigation }) => {
                 thumbColor={item.isActive ? "#22c55e" : "#777"}
               />
 
-              <TouchableOpacity
-                onPress={() => deleteEmail(item.id)}
-              >
+              <TouchableOpacity onPress={() => deleteEmail(item.id)}>
                 <Icon name="delete" size={26} color="red" />
               </TouchableOpacity>
 
             </View>
-
           </View>
         )}
       />
@@ -306,7 +315,13 @@ const ss = StyleSheet.create({
     backgroundColor: "#f1f5f9",
     padding: 14,
     borderRadius: 10,
-    marginBottom: 14,
+    marginBottom: 10,
+  },
+
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    marginBottom: 12,
   },
 
   addBtn: {
