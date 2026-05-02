@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
-const DirectorDashboard = ({ navigation, route}) => {
+const DirectorDashboard = ({ navigation, route }) => {
   // Always ensure onLogout is a valid function
   const { onLogout } = route.params;
 
@@ -38,11 +38,11 @@ const DirectorDashboard = ({ navigation, route}) => {
         </TouchableOpacity>
       </View>
 
-      {/* SESSION BAR */}
+      SESSION BAR
       <View style={ss.sessionBar}>
-        <Text style={{ color: "#fff" }}>Current Session:</Text>
+        <Text style={{ color: "#fff" }}> </Text>
         <View style={ss.sessionBadge}>
-          <Text style={{ color: "#fff" }}>Fall 2025</Text>
+          <Text style={{ color: "#fff" }}>Welcome...</Text>
         </View>
       </View>
 
@@ -67,6 +67,24 @@ const DirectorDashboard = ({ navigation, route}) => {
       </TouchableOpacity>
 
       <TouchableOpacity
+        style={[ss.row, { borderColor: "#86efac" }]}
+        onPress={() => navigation.navigate("OverallPerformance")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: "#22c55e" }]}>
+          <Icon name="insights" size={24} color="#fff" />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={ss.rowTitle}>Overall Performance</Text>
+          <Text style={ss.rowDesc}>
+            View overall university performance summary
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#22c55e" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
         style={[ss.row, { borderColor: "#fde68a" }]}
         onPress={() => navigation.navigate("SeePerformance")}
       >
@@ -74,7 +92,7 @@ const DirectorDashboard = ({ navigation, route}) => {
           <Icon name="bar-chart" size={24} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={ss.rowTitle}>See Performance</Text>
+          <Text style={ss.rowTitle}>Academic Performance</Text>
           <Text style={ss.rowDesc}>
             View employee performance analytics and reports
           </Text>

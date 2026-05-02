@@ -14,6 +14,7 @@ import ComparisonScreen from "../Components/Director/ComparisonScreen"
 import ComparisonResult from "../Components/Director/ComparisonResult"
 import CoursePerformanceScreen from "../Components/Director/CoursePerformance"
 import DetailPerformance from "../Components/Director/DetailPerformance"
+import OverallPerformance from "../Components/Director/OverallPerformance"
 
 const Stack = createNativeStackNavigator();
 
@@ -84,6 +85,11 @@ const DirectorNavigation = ({ onLogout }) => {
       <Stack.Screen
         name="DetailPerformance"
         component={DetailPerformance}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="OverallPerformance"
+        component={OverallPerformance}
         options={{ headerShown: false }}
       />
 

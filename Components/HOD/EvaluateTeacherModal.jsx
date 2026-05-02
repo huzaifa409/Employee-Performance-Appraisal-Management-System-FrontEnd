@@ -53,11 +53,11 @@ const EvaluateTeacherModal = ({
           CourseCode: sub.code,
 
           // IMPORTANT FIX:
-          PaperStatus: evalData.paper === true ? "OnTime"
+          PaperStatus: evalData.paper === true ? "On-Time"
                        : evalData.paper === false ? "Late"
                        : "Late",
 
-          FolderStatus: evalData.folder === true ? "OnTime"
+          FolderStatus: evalData.folder === true ? "On-Time"
                         : evalData.folder === false ? "Late"
                         : "Late",
         };
