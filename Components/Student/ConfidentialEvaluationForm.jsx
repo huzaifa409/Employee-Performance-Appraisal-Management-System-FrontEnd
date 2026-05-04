@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import BASE_URL from "../../API-URL/API";
 
+import { initDB, saveEvaluationLocal } from "../../Database/db";
+
 const options = [
   { label: "Excellent", score: 4 },
   { label: "Good", score: 3 },
@@ -26,6 +28,7 @@ const ConfidentialEvaluation = ({ route }) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+      initDB();
     fetchQuestions();
   }, []);
 
@@ -68,55 +71,62 @@ const ConfidentialEvaluation = ({ route }) => {
   };
 
   // Submit evaluation
-  const handleSubmit = async () => {
-    if (Object.keys(answers).length !== questions.length) {
-      Alert.alert("Error", "Please answer all questions");
+ const handleSubmit = async () => {
+  if (Object.keys(answers).length !== questions.length) {
+    Alert.alert("Error", "Please answer all questions");
+    return;
+  }
+
+  const payload = {
+    EnrollmentId: enrollmentID,
+    StudentId: studentId,
+    Answers: questions.map((q) => ({
+      questionId: q.QuestionID,
+      score: answers[q.QuestionID],
+    })),
+  };
+
+  try {
+    setSubmitting(true);
+
+    // =========================
+    // 1. SAVE LOCALLY (SQLite)
+    // =========================
+    await saveEvaluationLocal(enrollmentID, studentId, payload);
+
+    // =========================
+    // 2. SEND TO SERVER
+    // =========================
+    const response = await fetch(
+      `${BASE_URL}/studentDashboard/SubmitConfidentialEvaluation`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const text = await response.text();
+
+    if (!response.ok) {
+      Alert.alert("Server Error", text);
       return;
     }
 
-    const payload = {
-      EnrollmentId: enrollmentID,
-      StudentId: studentId,
-      Answers: questions.map((q) => ({
-        questionId: q.QuestionID,
-        score: answers[q.QuestionID],
-      })),
-    };
+    Alert.alert(
+      "Success",
+      "Saved locally + submitted to server successfully"
+    );
 
-    console.log("Submitting Payload:", payload);
-
-    try {
-      setSubmitting(true);
-
-      const response = await fetch(
-        `${BASE_URL}/studentDashboard/SubmitConfidentialEvaluation`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-        
-      );
-
-      const text = await response.text();
-      console.log("Server Response:", text);
-
-      if (!response.ok) {
-        Alert.alert("Server Error", text);
-        return;
-      }
-
-      Alert.alert("Success", "Evaluation submitted successfully");
-
-    } catch (error) {
-      console.log("Submit Error:", error);
-      Alert.alert("Error", "Failed to submit evaluation");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  } catch (error) {
+    console.log("Submit Error:", error);
+    Alert.alert("Error", "Submission failed");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   // Loading state
   if (loading) {
