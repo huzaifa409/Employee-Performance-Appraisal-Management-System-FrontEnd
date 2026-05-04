@@ -132,15 +132,15 @@ const HodDashboard = ({ navigation, route }) => {
 
       <TouchableOpacity
         style={[ss.row, { backgroundColor: '#dbeafe', borderColor: '#bfdbfe' }]}
-        onPress={() => navigation.navigate("CHRPointSetting")}
+        onPress={() => navigation.navigate("CHRReport")}
       >
         <View style={[ss.iconBox, { backgroundColor: "blue" }]}>
           <Icon name="settings" size={24} color="#fff" />
         </View>
 
         <View style={ss.textBlock}>
-          <Text style={ss.rowTitle}>CHR Point Setting</Text>
-          <Text style={ss.rowDesc}>Configure CHR scoring rules</Text>
+          <Text style={ss.rowTitle}>CHR Report</Text>
+          <Text style={ss.rowDesc}>see Teachers CHR Report</Text>
         </View>
 
         <Icon name="chevron-right" size={26} color="blue" />

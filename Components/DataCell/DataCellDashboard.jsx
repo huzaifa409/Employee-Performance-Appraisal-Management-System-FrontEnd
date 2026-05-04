@@ -32,7 +32,7 @@ const DcDashboard = ({navigation,route}) => {
       </View>
 
       
-      <TouchableOpacity style={[ss.containers, { marginTop: 40 }]}>
+      <TouchableOpacity style={[ss.containers, { marginTop: 40 }]} onPress={()=>navigation.navigate("UploadCHR")}>
         <View style={ss.iconContainer}>
           <Icon name="description" size={22} color="#1E7F4D" />
         </View>

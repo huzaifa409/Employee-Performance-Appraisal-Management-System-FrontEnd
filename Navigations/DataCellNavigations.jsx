@@ -6,6 +6,7 @@ import UploadTeachers from'../Components/DataCell/UploadTeachers'
 import UploadStudents from '../Components/DataCell/UploadStudents'
 import UploadCourses from '../Components/DataCell/UploadCourse'
 import UploadEnrollment from '../Components/DataCell/UploadEnrollment'
+import UploadCHR from '../Components/DataCell/UploadCHR'
 
 
 const stack=createNativeStackNavigator();
@@ -22,6 +23,7 @@ return(
           <stack.Screen name="UploadStudents" component={UploadStudents} options={{ headerShown: false }}  />
           <stack.Screen name="UploadCourses" component={UploadCourses} options={{ headerShown: false }}  />
           <stack.Screen name="UploadEnrollment" component={UploadEnrollment} options={{ headerShown: false }}  />
+          <stack.Screen name="UploadCHR" component={UploadCHR} options={{ headerShown: false }}  />
 
    
 
