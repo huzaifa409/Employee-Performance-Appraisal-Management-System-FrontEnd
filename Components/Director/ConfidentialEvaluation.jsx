@@ -17,6 +17,14 @@ const ConfidentialEvaluation = () => {
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingEmails, setLoadingEmails] = useState(true);
+  const [emailFilter, setEmailFilter] = useState("unread");
+
+
+  const filterOptions = [
+    { label: "Unread Emails", value: "unread" },
+    { label: "Read Emails", value: "read" },
+    { label: "All Emails", value: "all" },
+  ];
 
   // =========================
   // LOAD EMAILS
@@ -40,7 +48,34 @@ const ConfidentialEvaluation = () => {
   // =========================
   // FETCH EVALUATIONS
   // =========================
-  const fetchEvaluations = async () => {
+  // const fetchEvaluations = async () => {
+  //   if (!selectedEmail) return;
+
+  //   try {
+  //     setLoading(true);
+
+  //     const res = await fetch(`${BASE_URL}/Confidential/get-evaluations`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         mail: selectedEmail.mail,
+  //       }),
+  //     });
+
+  //     const data = await res.json();
+  //     console.log("API RESPONSE:", data);
+  //     setEvaluations(data.data || []);
+  //   } catch (err) {
+  //     console.log(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+
+  const fetchEvaluations = async (filter = emailFilter) => {
     if (!selectedEmail) return;
 
     try {
@@ -53,11 +88,13 @@ const ConfidentialEvaluation = () => {
         },
         body: JSON.stringify({
           mail: selectedEmail.mail,
+          filter: filter, // 🔥 SEND FILTER
         }),
       });
 
       const data = await res.json();
       console.log("API RESPONSE:", data);
+
       setEvaluations(data.data || []);
     } catch (err) {
       console.log(err);
@@ -65,6 +102,8 @@ const ConfidentialEvaluation = () => {
       setLoading(false);
     }
   };
+
+
 
   // =========================
   // CARD RENDER
@@ -178,12 +217,33 @@ const ConfidentialEvaluation = () => {
               />
             )}
           />
+
+
         )}
+
+        <Text style={styles.selectorLabel}>
+          <Icon name="filter-list" size={13} color="#64748b" /> Filter Emails
+        </Text>
+
+        <Dropdown
+          style={styles.dropdown}
+          data={filterOptions}
+          labelField="label"
+          valueField="value"
+          value={emailFilter}
+          onChange={(item) => {
+            setEmailFilter(item.value);
+            fetchEvaluations(item.value); // 🔥 auto reload
+          }}
+          renderLeftIcon={() => (
+            <Icon name="tune" size={18} color="#16a34a" style={{ marginRight: 8 }} />
+          )}
+        />
 
         {/* BUTTON */}
         <TouchableOpacity
           style={[styles.button, !selectedEmail && styles.buttonDisabled]}
-          onPress={fetchEvaluations}
+          onPress={() => fetchEvaluations(emailFilter)}
           activeOpacity={0.85}
         >
           {loading ? (

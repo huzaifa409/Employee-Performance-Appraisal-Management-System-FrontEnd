@@ -164,6 +164,24 @@ const DirectorDashboard = ({ navigation, route }) => {
         <Icon name="chevron-right" size={26} color="#059669" />
       </TouchableOpacity>
 
+      <TouchableOpacity
+  style={[ss.row, { borderColor: "#fca5a5" }]}
+  onPress={() => navigation.navigate("CourseEvaluationScreen")}
+>
+  <View style={[ss.iconBox, { backgroundColor: "#dc2626" }]}>
+    <Icon name="assessment" size={24} color="#fff" />
+  </View>
+
+  <View style={{ flex: 1 }}>
+    <Text style={ss.rowTitle}>Reports</Text>
+    <Text style={ss.rowDesc}>
+      View detailed reports and analytics of the system
+    </Text>
+  </View>
+
+  <Icon name="chevron-right" size={26} color="#dc2626" />
+</TouchableOpacity>
+
       <Text style={ss.quote}>
         "Leadership is not about being in charge. It is about taking care of
         those in your charge." — Simon Sinek

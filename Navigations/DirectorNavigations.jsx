@@ -15,7 +15,8 @@ import ComparisonResult from "../Components/Director/ComparisonResult"
 import CoursePerformanceScreen from "../Components/Director/CoursePerformance"
 import DetailPerformance from "../Components/Director/DetailPerformance"
 import OverallPerformance from "../Components/Director/OverallPerformance"
-
+import CourseEvaluationScreen from "../Components/Director/ExtraFeatures/CourseEvaluationScreen"
+import QuestionAnalysis from "../Components/Director/ExtraFeatures/QuestionAnalysis"
 const Stack = createNativeStackNavigator();
 
 const DirectorNavigation = ({ onLogout }) => {
@@ -90,6 +91,25 @@ const DirectorNavigation = ({ onLogout }) => {
       <Stack.Screen
         name="OverallPerformance"
         component={OverallPerformance}
+        options={{ headerShown: false }}
+      />
+
+
+
+
+
+
+
+
+
+      <Stack.Screen
+        name="CourseEvaluationScreen"
+        component={CourseEvaluationScreen} 
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="QuestionAnalysis"
+        component={QuestionAnalysis} 
         options={{ headerShown: false }}
       />
 

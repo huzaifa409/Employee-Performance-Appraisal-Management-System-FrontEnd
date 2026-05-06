@@ -115,14 +115,14 @@ const HodDashboard = ({ navigation, route }) => {
 
       <TouchableOpacity
         style={[ss.row, { backgroundColor: '#fdebd3', borderColor: '#fde68a' }]}
-        onPress={() => navigation.navigate("SeePerformance")}
+        onPress={() => navigation.navigate("OverallPerformanceScreen")}
       >
         <View style={[ss.iconBox, { backgroundColor: '#ea8501' }]}>
           <Icon name="bar-chart" size={24} color="#fff" />
         </View>
 
         <View style={ss.textBlock}>
-          <Text style={ss.rowTitle}>See Performance</Text>
+          <Text style={ss.rowTitle}>See Overall Performance</Text>
           <Text style={ss.rowDesc}>View Detail Analytics</Text>
         </View>
 

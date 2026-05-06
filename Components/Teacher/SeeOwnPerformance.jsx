@@ -14,8 +14,6 @@ import { BarChart } from "react-native-gifted-charts";
 import { Dropdown } from "react-native-element-dropdown";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
-
-// IMPORT LOCAL DB HELPER
 import { getConfidentialByTeacherSession } from "../../Database/db";
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -35,11 +33,15 @@ const C = {
   textMid: "#57534e",
   textLight: "#a8a29e",
   white: "#ffffff",
+  // KPI filter accent — reuses teal family so it feels native to this screen
+  filterActive: "#0d9488",
+  filterActiveBg: "#f0fdfa",
+  filterActiveBorder: "#99f6e4",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const scoreColor = (pct) => (pct >= 75 ? C.teal : pct >= 50 ? C.amber : C.red);
-const scoreBg = (pct) => (pct >= 75 ? C.tealLight : pct >= 50 ? C.amberLight : C.redLight);
+const scoreBg    = (pct) => (pct >= 75 ? C.tealLight : pct >= 50 ? C.amberLight : C.redLight);
 const scoreLabel = (pct) => (pct >= 75 ? "Excellent" : pct >= 50 ? "Average" : "Needs Work");
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -59,7 +61,7 @@ const ScoreBadge = ({ pct }) => (
 );
 
 const KPICard = ({ kpi }) => {
-  const pct = kpi.KPIWeight ? (kpi.KPIAchieved / kpi.KPIWeight) * 100 : 0;
+  const pct   = kpi.KPIWeight ? (kpi.KPIAchieved / kpi.KPIWeight) * 100 : 0;
   const color = scoreColor(pct);
   return (
     <View style={[s.kpiCard, { borderLeftColor: color }]}>
@@ -75,9 +77,8 @@ const KPICard = ({ kpi }) => {
 };
 
 const ProgressRow = ({ sub, isConfidential }) => {
-  const pct = sub.SubMax > 0 ? (sub.SubAchieved / sub.SubMax) * 100 : 0;
+  const pct   = sub.SubMax > 0 ? (sub.SubAchieved / sub.SubMax) * 100 : 0;
   const color = isConfidential ? C.tealDeep : scoreColor(pct);
-
   return (
     <View style={s.progressRow}>
       <View style={s.progressHeader}>
@@ -99,16 +100,19 @@ const SeeOwnPerformance = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const { userId, username } = route.params;
 
-  const [loading, setLoading] = useState(true);
-  const [fetchingData, setFetchingData] = useState(false);
-  const [performanceData, setPerformanceData] = useState(null);
-  const [subKpiChartData, setSubKpiChartData] = useState([]);
-  const [sessions, setSessions] = useState([]);
+  const [loading,              setLoading]              = useState(true);
+  const [fetchingData,         setFetchingData]         = useState(false);
+  const [performanceData,      setPerformanceData]      = useState(null);
+  const [subKpiChartData,      setSubKpiChartData]      = useState([]);
+  const [sessions,             setSessions]             = useState([]);
   const [selectedSessionValue, setSelectedSessionValue] = useState(null);
 
-  useEffect(() => {
-    initialFetch();
-  }, []);
+  // ── KPI filter state ───────────────────────────────────────────────────────
+  const [kpiOptions,   setKpiOptions]   = useState([]);
+  const [selectedKpi,  setSelectedKpi]  = useState(null); // null = All KPIs
+  const [loadingKpis,  setLoadingKpis]  = useState(false);
+
+  useEffect(() => { initialFetch(); }, []);
 
   const initialFetch = async () => {
     setLoading(true);
@@ -118,20 +122,39 @@ const SeeOwnPerformance = ({ route, navigation }) => {
 
   const fetchSessions = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/PeerEvaluator/Sessions`);
+      const res  = await fetch(`${BASE_URL}/PeerEvaluator/Sessions`);
       const data = await res.json();
       const formatted = data.map((s) => ({ label: s.name, value: s.id }));
       setSessions(formatted);
       if (formatted.length > 0) {
         setSelectedSessionValue(formatted[0].value);
-        fetchPerformance(formatted[0].value);
+        await loadKpisForSession(formatted[0].value);
+        fetchPerformance(formatted[0].value, null);
       }
     } catch {
       Alert.alert("Error", "Failed to load sessions");
     }
   };
 
-  const fetchPerformance = async (sessionId) => {
+  // ── Load KPI filter options for a session ─────────────────────────────────
+  const loadKpisForSession = async (sessionId) => {
+    setLoadingKpis(true);
+    try {
+      const res  = await fetch(`${BASE_URL}/OverallPerformance/GetKpiTypesBySession/${sessionId}`);
+      const json = await res.json();
+      setKpiOptions([
+        { label: "All KPIs", value: null },
+        ...json.map((k) => ({ label: k.name, value: k.id })),
+      ]);
+    } catch {
+      setKpiOptions([{ label: "All KPIs", value: null }]);
+    } finally {
+      setLoadingKpis(false);
+    }
+  };
+
+  // ── Core fetch — accepts explicit kpiId so state timing is never an issue ──
+  const fetchPerformance = async (sessionId, kpiId) => {
     setFetchingData(true);
     try {
       const localScores = await getConfidentialByTeacherSession(userId);
@@ -140,11 +163,15 @@ const SeeOwnPerformance = ({ route, navigation }) => {
         avgScore = localScores.reduce((a, b) => a + b, 0) / localScores.length;
       }
 
-      const res = await fetch(`${BASE_URL}/OverallPerformance/GetTeacherPerformanceAnalytics/${userId}/${sessionId}`);
+      let url = `${BASE_URL}/OverallPerformance/GetTeacherPerformanceAnalytics/${userId}/${sessionId}`;
+      if (kpiId !== null && kpiId !== undefined) url += `?kpiId=${kpiId}`;
+
+      const res    = await fetch(url);
       const result = await res.json();
 
       if (result.Status === "Empty") {
         setPerformanceData(null);
+        setSubKpiChartData([]);
         return;
       }
 
@@ -155,33 +182,29 @@ const SeeOwnPerformance = ({ route, navigation }) => {
         let kpiTotal = 0;
         kpi.SubDetails.forEach((sub) => {
           const isConf = sub.SubName?.toLowerCase().includes("confidential");
-          
           if (isConf) {
             const calculated = sub.MaxScale > 0 ? (avgScore / sub.MaxScale) * sub.SubMax : 0;
             sub.SubAchieved = Number(calculated.toFixed(2));
           }
-          
           sub.SubAchieved = Math.min(sub.SubAchieved, sub.SubMax);
           const pct = sub.SubMax > 0 ? (sub.SubAchieved / sub.SubMax) * 100 : 0;
-          
-          // Populate Sub-KPI Chart Data
           subChartItems.push({
             value: pct,
-            label: sub.SubName.split(" ")[0].substring(0, 5), // Short label
+            label: sub.SubName.split(" ")[0].substring(0, 5),
             frontColor: isConf ? C.tealDeep : scoreColor(pct),
             topLabelComponent: () => (
               <Text style={{ color: C.textMid, fontSize: 8 }}>{Math.round(pct)}</Text>
             ),
           });
-
           kpiTotal += sub.SubAchieved;
         });
         kpi.KPIAchieved = Number(Math.min(kpiTotal, kpi.KPIWeight).toFixed(2));
         totalEarned += kpi.KPIAchieved;
-        totalMax += kpi.KPIWeight;
+        totalMax    += kpi.KPIWeight;
       });
 
-      result.OverallPercentage = totalMax > 0 ? Number(((totalEarned / totalMax) * 100).toFixed(2)) : 0;
+      result.OverallPercentage = totalMax > 0
+        ? Number(((totalEarned / totalMax) * 100).toFixed(2)) : 0;
 
       setPerformanceData(result);
       setSubKpiChartData(subChartItems);
@@ -192,6 +215,22 @@ const SeeOwnPerformance = ({ route, navigation }) => {
     }
   };
 
+  // ── Session change ─────────────────────────────────────────────────────────
+  const handleSessionChange = async (sessionId) => {
+    setSelectedSessionValue(sessionId);
+    setSelectedKpi(null);          // reset KPI filter
+    setPerformanceData(null);
+    await loadKpisForSession(sessionId);
+    fetchPerformance(sessionId, null);
+  };
+
+  // ── KPI filter change ──────────────────────────────────────────────────────
+  const handleKpiChange = (kpiValue) => {
+    setSelectedKpi(kpiValue);
+    fetchPerformance(selectedSessionValue, kpiValue);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={[s.center, { paddingTop: insets.top, backgroundColor: C.bg }]}>
@@ -201,12 +240,16 @@ const SeeOwnPerformance = ({ route, navigation }) => {
     );
   }
 
-  const overall = performanceData?.OverallPercentage ?? 0;
+  const overall        = performanceData?.OverallPercentage ?? 0;
+  const activeKpiLabel = selectedKpi
+    ? kpiOptions.find((k) => k.value === selectedKpi)?.label ?? null
+    : null;
 
   return (
     <View style={[s.root, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
 
+      {/* ── Header ── */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={s.backBtn}>
           <Icon name="arrow-back" size={20} color={C.teal} />
@@ -220,7 +263,12 @@ const SeeOwnPerformance = ({ route, navigation }) => {
         </View>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Session picker ── */}
         <View style={s.sessionRow}>
           <Icon name="event" size={15} color={C.textLight} style={{ marginRight: 6 }} />
           <Dropdown
@@ -229,12 +277,54 @@ const SeeOwnPerformance = ({ route, navigation }) => {
             labelField="label"
             valueField="value"
             value={selectedSessionValue}
-            onChange={(item) => {
-              setSelectedSessionValue(item.value);
-              fetchPerformance(item.value);
-            }}
+            onChange={(item) => handleSessionChange(item.value)}
           />
         </View>
+
+        {/* ── KPI filter row ── */}
+        {/* <View style={s.kpiFilterRow}>
+          <Icon name="filter-list" size={15} color={C.textLight} style={{ marginRight: 6 }} />
+          {loadingKpis ? (
+            <ActivityIndicator size="small" color={C.teal} style={{ marginLeft: 4 }} />
+          ) : (
+            <Dropdown
+              style={[
+                s.kpiDropdown,
+                selectedKpi !== null && s.kpiDropdownActive,
+              ]}
+              data={kpiOptions}
+              labelField="label"
+              valueField="value"
+              placeholder="All KPIs"
+              value={selectedKpi}
+              onChange={(item) => handleKpiChange(item.value)}
+              disable={kpiOptions.length === 0}
+            />
+          )}
+          {/* Clear button — only visible when a KPI is selected */}
+          {/* {selectedKpi !== null && (
+            <TouchableOpacity
+              style={s.clearBtn}
+              onPress={() => handleKpiChange(null)}
+            >
+              <Icon name="close" size={13} color={C.tealDeep} />
+              <Text style={s.clearBtnText}>All</Text>
+            </TouchableOpacity>
+          )}
+        </View>  */}
+
+        {/* ── Active filter chip (shown below pickers when filtering) ── */}
+        {activeKpiLabel && (
+          <View style={s.activeChip}>
+            <Icon name="filter-alt" size={13} color={C.tealDeep} style={{ marginRight: 4 }} />
+            <Text style={s.activeChipText}>
+              Filtered: <Text style={{ fontWeight: "700" }}>{activeKpiLabel}</Text>
+            </Text>
+            <TouchableOpacity onPress={() => handleKpiChange(null)} style={{ marginLeft: "auto" }}>
+              <Text style={s.activeChipClear}>Show all</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {fetchingData ? (
           <View style={s.fetchingBlock}>
@@ -243,6 +333,7 @@ const SeeOwnPerformance = ({ route, navigation }) => {
           </View>
         ) : performanceData ? (
           <>
+            {/* ── Hero score card ── */}
             <View style={s.heroCard}>
               <View style={s.heroLeft}>
                 <Text style={s.heroLabel}>Overall Score</Text>
@@ -258,15 +349,19 @@ const SeeOwnPerformance = ({ route, navigation }) => {
                   return (
                     <View key={i} style={s.miniStatRow}>
                       <View style={[s.miniDot, { backgroundColor: scoreColor(p) }]} />
-                      <Text style={s.miniStatLabel} numberOfLines={1}>{kpi.KPIName.split(" ")[0]}</Text>
-                      <Text style={[s.miniStatVal, { color: scoreColor(p) }]}>{p.toFixed(0)}%</Text>
+                      <Text style={s.miniStatLabel} numberOfLines={1}>
+                        {kpi.KPIName.split(" ")[0]}
+                      </Text>
+                      <Text style={[s.miniStatVal, { color: scoreColor(p) }]}>
+                        {p.toFixed(0)}%
+                      </Text>
                     </View>
                   );
                 })}
               </View>
             </View>
 
-            {/* ── SUB-KPI CHART (Replaces KPI Chart) ── */}
+            {/* ── Sub-KPI chart ── */}
             <View style={s.card}>
               <SectionTitle icon="bar-chart">Sub-Indicator Analysis</SectionTitle>
               <Text style={s.chartSub}>All performance metrics (% score)</Text>
@@ -289,6 +384,7 @@ const SeeOwnPerformance = ({ route, navigation }) => {
               </ScrollView>
             </View>
 
+            {/* ── KPI breakdown grid ── */}
             <View style={s.card}>
               <SectionTitle icon="layers">KPI Breakdown</SectionTitle>
               <Divider />
@@ -299,25 +395,27 @@ const SeeOwnPerformance = ({ route, navigation }) => {
               </View>
             </View>
 
+            {/* ── Detailed indicators ── */}
             <View style={s.card}>
               <SectionTitle icon="tune">Detailed Indicators</SectionTitle>
               <Divider />
               {performanceData.Breakdown.map((kpi) =>
                 kpi.SubDetails.map((sub, j) => (
-                  <ProgressRow 
-                    key={j} 
-                    sub={sub} 
-                    isConfidential={sub.SubName?.toLowerCase().includes("confidential")} 
+                  <ProgressRow
+                    key={j}
+                    sub={sub}
+                    isConfidential={sub.SubName?.toLowerCase().includes("confidential")}
                   />
                 ))
               )}
             </View>
 
+            {/* ── Legend ── */}
             <View style={s.legendRow}>
               {[
-                { color: C.teal, label: "Excellent" },
-                { color: C.amber, label: "Average" },
-                { color: C.red, label: "Poor" },
+                { color: C.teal,     label: "Excellent" },
+                { color: C.amber,    label: "Average" },
+                { color: C.red,      label: "Poor" },
                 { color: C.tealDeep, label: "Confidential Eval" },
               ].map(({ color, label }) => (
                 <View key={label} style={s.legendItem}>
@@ -342,54 +440,130 @@ const SeeOwnPerformance = ({ route, navigation }) => {
 export default SeeOwnPerformance;
 
 const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  root:         { flex: 1, backgroundColor: C.bg },
+  center:       { flex: 1, justifyContent: "center", alignItems: "center" },
   loadingLabel: { color: C.textLight, marginTop: 10, fontSize: 13 },
-  scrollContent: { padding: 16 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border },
-  backBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: C.tealLight, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  scrollContent:{ padding: 16 },
+
+  header: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border,
+  },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: C.tealLight, alignItems: "center", justifyContent: "center", marginRight: 12,
+  },
   headerTitle: { color: C.textDark, fontSize: 17, fontWeight: "800" },
-  headerSub: { color: C.textLight, fontSize: 12, marginTop: 1 },
-  avatarCircle: { width: 38, height: 38, borderRadius: 19, backgroundColor: C.teal, alignItems: "center", justifyContent: "center" },
+  headerSub:   { color: C.textLight, fontSize: 12, marginTop: 1 },
+  avatarCircle: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: C.teal, alignItems: "center", justifyContent: "center",
+  },
   avatarText: { color: C.white, fontSize: 16, fontWeight: "800" },
-  sessionRow: { flexDirection: "row", alignItems: "center", backgroundColor: C.surface, borderRadius: 12, borderWidth: 1, borderColor: C.border, paddingHorizontal: 12, marginBottom: 14 },
+
+  // ── Session picker row ────────────────────────────────────────────────────
+  sessionRow: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: C.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 12, marginBottom: 10,
+  },
   dropdown: { flex: 1, height: 48 },
+
+  // ── KPI filter row ────────────────────────────────────────────────────────
+  kpiFilterRow: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: C.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border,
+    paddingHorizontal: 12, marginBottom: 10,
+  },
+  kpiDropdown: {
+    flex: 1, height: 44,
+  },
+  // highlighted border when a specific KPI is active
+  kpiDropdownActive: {
+    borderWidth: 1,
+    borderColor: C.teal,
+    borderRadius: 8,
+    backgroundColor: C.filterActiveBg,
+  },
+  clearBtn: {
+    flexDirection: "row", alignItems: "center", gap: 3,
+    backgroundColor: C.tealLight, borderRadius: 6,
+    paddingHorizontal: 8, paddingVertical: 5, marginLeft: 6,
+  },
+  clearBtnText: { color: C.tealDeep, fontSize: 11, fontWeight: "700" },
+
+  // ── Active filter chip ────────────────────────────────────────────────────
+  activeChip: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: C.filterActiveBg,
+    borderWidth: 1, borderColor: C.filterActiveBorder,
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8,
+    marginBottom: 14,
+  },
+  activeChipText:  { color: C.tealDeep, fontSize: 12 },
+  activeChipClear: { color: C.teal, fontSize: 12, fontWeight: "700" },
+
   fetchingBlock: { alignItems: "center", paddingVertical: 50 },
-  card: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 14 },
+
+  card: {
+    backgroundColor: C.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: C.border, padding: 16, marginBottom: 14,
+  },
   sectionTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
   sectionTitleText: { color: C.textDark, fontSize: 13, fontWeight: "700" },
   chartSub: { color: C.textLight, fontSize: 11, marginBottom: 10 },
-  divider: { height: 1, backgroundColor: C.border, marginBottom: 14 },
-  heroCard: { backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 20, marginBottom: 14, flexDirection: "row" },
-  heroLeft: { flex: 1, borderRightWidth: 1, borderRightColor: C.border, paddingRight: 16, marginRight: 16 },
-  heroLabel: { color: C.textLight, fontSize: 11, fontWeight: "600", textTransform: "uppercase", marginBottom: 6 },
-  heroScore: { fontSize: 56, fontWeight: "900", lineHeight: 60, marginBottom: 10 },
+  divider:  { height: 1, backgroundColor: C.border, marginBottom: 14 },
+
+  heroCard: {
+    backgroundColor: C.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: C.border,
+    padding: 20, marginBottom: 14, flexDirection: "row",
+  },
+  heroLeft: {
+    flex: 1, borderRightWidth: 1, borderRightColor: C.border,
+    paddingRight: 16, marginRight: 16,
+  },
+  heroLabel:     { color: C.textLight, fontSize: 11, fontWeight: "600", textTransform: "uppercase", marginBottom: 6 },
+  heroScore:     { fontSize: 56, fontWeight: "900", lineHeight: 60, marginBottom: 10 },
   heroScoreUnit: { fontSize: 24, fontWeight: "700" },
-  badge: { alignSelf: "flex-start", borderWidth: 1, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  badge: {
+    alignSelf: "flex-start", borderWidth: 1, borderRadius: 20,
+    paddingHorizontal: 10, paddingVertical: 4,
+  },
   badgeText: { fontSize: 11, fontWeight: "700" },
-  heroRight: { justifyContent: "center", flex: 1, gap: 10 },
-  miniStatRow: { flexDirection: "row", alignItems: "center" },
-  miniDot: { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
-  miniStatLabel: { flex: 1, color: C.textMid, fontSize: 12 },
-  miniStatVal: { fontSize: 12, fontWeight: "700" },
+  heroRight:    { justifyContent: "center", flex: 1, gap: 10 },
+  miniStatRow:  { flexDirection: "row", alignItems: "center" },
+  miniDot:      { width: 7, height: 7, borderRadius: 4, marginRight: 6 },
+  miniStatLabel:{ flex: 1, color: C.textMid, fontSize: 12 },
+  miniStatVal:  { fontSize: 12, fontWeight: "700" },
+
   kpiGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  kpiCard: { width: "47%", backgroundColor: C.surfaceWarm, borderRadius: 12, borderWidth: 1, borderColor: C.border, borderLeftWidth: 4, padding: 14 },
-  kpiCardName: { color: C.textDark, fontSize: 12, fontWeight: "700", lineHeight: 17, marginBottom: 10 },
+  kpiCard: {
+    width: "47%", backgroundColor: C.surfaceWarm, borderRadius: 12,
+    borderWidth: 1, borderColor: C.border, borderLeftWidth: 4, padding: 14,
+  },
+  kpiCardName:   { color: C.textDark, fontSize: 12, fontWeight: "700", lineHeight: 17, marginBottom: 10 },
   kpiCardBottom: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   kpiCardWeight: { color: C.textLight, fontSize: 10, fontWeight: "600" },
-  kpiPill: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
-  kpiPillText: { fontSize: 12, fontWeight: "800" },
-  progressRow: { marginBottom: 16 },
-  progressHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  kpiPill:       { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
+  kpiPillText:   { fontSize: 12, fontWeight: "800" },
+
+  progressRow:   { marginBottom: 16 },
+  progressHeader:{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
   progressLabel: { color: C.textDark, fontSize: 13, fontWeight: "600", flex: 1, marginRight: 8 },
-  progressPct: { fontSize: 13, fontWeight: "800" },
+  progressPct:   { fontSize: 13, fontWeight: "800" },
   progressTrack: { height: 7, backgroundColor: C.border, borderRadius: 8, overflow: "hidden" },
-  progressFill: { height: 7, borderRadius: 8 },
-  progressSub: { color: C.textLight, fontSize: 10, marginTop: 4, textAlign: "right" },
+  progressFill:  { height: 7, borderRadius: 8 },
+  progressSub:   { color: C.textLight, fontSize: 10, marginTop: 4, textAlign: "right" },
+
   legendRow: { flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 12, marginBottom: 6 },
-  legendItem: { flexDirection: "row", alignItems: "center" },
+  legendItem:{ flexDirection: "row", alignItems: "center" },
   legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 5 },
-  legendText: { color: C.textMid, fontSize: 11 },
-  emptyState: { alignItems: "center", paddingVertical: 60 },
-  emptyTitle: { color: C.textMid, fontSize: 16, fontWeight: "700", marginTop: 14 },
+  legendText:{ color: C.textMid, fontSize: 11 },
+
+  emptyState:{ alignItems: "center", paddingVertical: 60 },
+  emptyTitle:{ color: C.textMid, fontSize: 16, fontWeight: "700", marginTop: 14 },
 });

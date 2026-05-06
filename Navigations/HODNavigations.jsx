@@ -13,6 +13,7 @@ import AssignMentors from "../Components/HOD/AssignMentor";
 import EvaluateSocietyChairPerson from "../Components/HOD/EvaluateSocietyChairPerson"
 import EvaluateChairPersonForm from "../Components/HOD/EvaluateChairPersonForm"
 import CHRDetail from "../Components/HOD/CHRDetails"
+import OverallPerformanceScreen from "../Components//HOD/OverallPerformance";
 
 
 
@@ -37,6 +38,7 @@ const HodNavigation = ({ onLogout ,userId  }) => {
             <stack.Screen name="EvaluateSocietyChairPerson" component={EvaluateSocietyChairPerson}options={{ headerShown: false }}/>
             <stack.Screen name="EvaluateChairPersonForm" component={EvaluateChairPersonForm}options={{ headerShown: false }}/>
             <stack.Screen name="CHRDetail" component={CHRDetail}options={{ headerShown: false }}/>
+            <stack.Screen name="OverallPerformanceScreen" component={OverallPerformanceScreen}options={{ headerShown: false }}/>
           
 
 
