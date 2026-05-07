@@ -173,7 +173,7 @@ const DirectorDashboard = ({ navigation, route }) => {
   </View>
 
   <View style={{ flex: 1 }}>
-    <Text style={ss.rowTitle}>Reports</Text>
+    <Text style={ss.rowTitle}>Course Evaluation Report</Text>
     <Text style={ss.rowDesc}>
       View detailed reports and analytics of the system
     </Text>
