@@ -15,23 +15,23 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
 
 const screenWidth = Dimensions.get("window").width;
-const cardWidth   = (screenWidth - 15 * 3) / 2; // 2 columns with gaps
+const cardWidth = (screenWidth - 15 * 3) / 2; // 2 columns with gaps
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
-  bg:          "#f0f2f5",
-  surface:     "#ffffff",
-  border:      "#e8eaed",
-  green:       "#16a34a",
-  greenLight:  "#dcfce7",
-  greenDark:   "#14532d",
-  orange:      "#ea580c",
-  blue:        "#2563eb",
-  textDark:    "#111827",
-  textMid:     "#374151",
-  textLight:   "#6b7280",
-  textFaint:   "#9ca3af",
-  white:       "#ffffff",
+  bg: "#f0f2f5",
+  surface: "#ffffff",
+  border: "#e8eaed",
+  green: "#16a34a",
+  greenLight: "#dcfce7",
+  greenDark: "#14532d",
+  orange: "#ea580c",
+  blue: "#2563eb",
+  textDark: "#111827",
+  textMid: "#374151",
+  textLight: "#6b7280",
+  textFaint: "#9ca3af",
+  white: "#ffffff",
 };
 
 // ── Bar color by value ────────────────────────────────────────────────────────
@@ -43,7 +43,7 @@ const barColor = (val) => {
 
 // ── Progress bar row ──────────────────────────────────────────────────────────
 const ProgressBar = ({ label, value }) => {
-  const pct   = Math.min(Math.max(value ?? 0, 0), 100);
+  const pct = Math.min(Math.max(value ?? 0, 0), 100);
   const color = barColor(pct);
 
   return (
@@ -93,8 +93,8 @@ const TeacherCard = ({ item, onPress }) => {
 
       {/* ── Progress bars */}
       <ProgressBar label="STUDENT EVALUATION" value={(item.StudentAverage ?? 0) * 10} />
-      <ProgressBar label="PEER EVALUATION"    value={(item.PeerAverage    ?? 0) * 10} />
-      <ProgressBar label="CHR REPORT"         value={(item.ChrAverage     ?? 0) * 10} />
+      <ProgressBar label="PEER EVALUATION" value={(item.PeerAverage ?? 0) * 10} />
+      <ProgressBar label="CHR REPORT" value={(item.ChrAverage ?? 0) * 10} />
 
       {/* ── CTA button */}
       <TouchableOpacity style={s.ctaBtn} onPress={onPress} activeOpacity={0.85}>
@@ -108,14 +108,14 @@ const TeacherCard = ({ item, onPress }) => {
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 const PerformanceScreen = ({ navigation }) => {
-  const [sessions,         setSessions]         = useState([]);
-  const [selectedSession,  setSelectedSession]  = useState(null);
-  const [departments]                            = useState(["CS", "Non CS", "Admin"]);
-  const [selectedDept,     setSelectedDept]     = useState("CS");
-  const [courses,          setCourses]          = useState([]);
-  const [selectedCourse,   setSelectedCourse]   = useState("All");
-  const [teachers,         setTeachers]         = useState([]);
-  const [loading,          setLoading]          = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [departments] = useState(["CS", "Non CS", "Admin"]);
+  const [selectedDept, setSelectedDept] = useState("CS");
+  const [courses, setCourses] = useState([]);
+  const [selectedCourse, setSelectedCourse] = useState("All");
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => { fetchSessions(); }, []);
 
@@ -128,7 +128,7 @@ const PerformanceScreen = ({ navigation }) => {
 
   const fetchSessions = async () => {
     try {
-      const res  = await fetch(`${BASE_URL}/Performance/GetSessions`);
+      const res = await fetch(`${BASE_URL}/Performance/GetSessions`);
       const data = await res.json();
       setSessions(data.map((s) => ({ label: s.name, value: s.id })));
     } catch (e) { console.log("Session Error:", e); }
@@ -136,7 +136,7 @@ const PerformanceScreen = ({ navigation }) => {
 
   const fetchCourses = async () => {
     try {
-      const res  = await fetch(`${BASE_URL}/Performance/GetCoursesBySession?sessionId=${selectedSession}`);
+      const res = await fetch(`${BASE_URL}/Performance/GetCoursesBySession?sessionId=${selectedSession}`);
       const data = await res.json();
       setCourses(["All", ...(data || [])]);
     } catch (e) { console.log("Course Error:", e); }
@@ -145,7 +145,7 @@ const PerformanceScreen = ({ navigation }) => {
   const fetchTeachers = async () => {
     try {
       setLoading(true);
-      const res  = await fetch(
+      const res = await fetch(
         `${BASE_URL}/Performance/GetTeachersPerformanceList?sessionId=${selectedSession}&courseCode=${selectedCourse}&department=${selectedDept}`
       );
       const data = await res.json();
@@ -159,17 +159,52 @@ const PerformanceScreen = ({ navigation }) => {
   };
 
   // chart data
-  const chartData = teachers.slice(0, 8).map((t) => {
-    const avg = (t.StudentAverage + t.PeerAverage + t.ChrAverage) / 3;
+  // chart data
+  const chartData = teachers.map((t, index) => {
+    const avg =
+      (Number(t.StudentAverage || 0) +
+        Number(t.PeerAverage || 0) +
+        Number(t.ChrAverage || 0)) / 3;
+
     const val = parseFloat((avg * 10).toFixed(0));
+
     return {
       value: val,
-      label: t.Name?.split(" ")[0] || "T",
+
+      // 👇 Teacher short name at bottom
+      label: t.Name
+        ? t.Name.split(" ")[0]
+        : `T${index + 1}`,
+
       frontColor: barColor(val),
+
+      spacing: 18,
+
+      // 👇 Percentage on top
       topLabelComponent: () => (
-        <Text style={{ color: barColor(val), fontSize: 9, fontWeight: "700", marginBottom: 2 }}>
-          {val}%
-        </Text>
+        <View style={{ alignItems: "center" }}>
+          <Text
+            style={{
+              color: barColor(val),
+              fontSize: 9,
+              fontWeight: "700",
+              marginBottom: 2,
+            }}
+          >
+            {val}%
+          </Text>
+
+          {/* 👇 COURSE CODE SMALL LABEL */}
+          <Text
+            style={{
+              color: C.textLight,
+              fontSize: 8,
+              fontWeight: "700",
+            }}
+          >
+            {t.CourseCode}
+          </Text>
+        </View>
       ),
     };
   });
@@ -250,20 +285,28 @@ const PerformanceScreen = ({ navigation }) => {
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <BarChart
                 data={chartData}
-                height={200}
+                height={220}
                 barWidth={28}
-                spacing={16}
+                spacing={22}
                 isAnimated
+                roundedTop
+                hideRules={false}
+                rulesType="dashed"
+                rulesColor={C.border}
                 yAxisThickness={0}
                 xAxisThickness={1}
                 xAxisColor={C.border}
-                rulesColor={C.border}
-                rulesType="dashed"
                 noOfSections={4}
                 maxValue={100}
-                yAxisTextStyle={{ color: C.textFaint, fontSize: 10 }}
-                xAxisLabelTextStyle={{ color: C.textMid, fontSize: 10, fontWeight: "600" }}
-                roundedTop
+                yAxisTextStyle={{
+                  color: C.textFaint,
+                  fontSize: 10,
+                }}
+                xAxisLabelTextStyle={{
+                  color: C.textMid,
+                  fontSize: 10,
+                  fontWeight: "600",
+                }}
               />
             </ScrollView>
           </View>
@@ -290,7 +333,7 @@ const PerformanceScreen = ({ navigation }) => {
                 item={item}
                 onPress={() =>
                   navigation.navigate("DetailPerformance", {
-                    teacherId:  item.TeacherID,
+                    teacherId: item.TeacherID,
                     courseCode: item.CourseCode,
                   })
                 }
@@ -364,8 +407,8 @@ const s = StyleSheet.create({
     backgroundColor: C.green,
     borderColor: C.green,
   },
-  tabText:       { color: C.textMid, fontSize: 13, fontWeight: "600" },
-  tabTextActive: { color: C.white,   fontSize: 13, fontWeight: "700" },
+  tabText: { color: C.textMid, fontSize: 13, fontWeight: "600" },
+  tabTextActive: { color: C.white, fontSize: 13, fontWeight: "700" },
 
   // COURSE CHIPS
   sectionLabel: {
@@ -384,9 +427,9 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.border,
   },
-  chipActive:     { backgroundColor: C.greenLight, borderColor: C.green },
-  chipText:       { color: C.textMid, fontSize: 12, fontWeight: "600" },
-  chipTextActive: { color: C.green,   fontSize: 12, fontWeight: "700" },
+  chipActive: { backgroundColor: C.greenLight, borderColor: C.green },
+  chipText: { color: C.textMid, fontSize: 12, fontWeight: "600" },
+  chipTextActive: { color: C.green, fontSize: 12, fontWeight: "700" },
 
   // CHART CARD
   chartCard: {

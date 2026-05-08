@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import BASE_URL from "../../API-URL/API";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { initDB, saveEvaluationLocal } from "../../Database/db";
 
@@ -19,7 +20,7 @@ const options = [
   { label: "Poor", score: 1 },
 ];
 
-const ConfidentialEvaluation = ({ route }) => {
+const ConfidentialEvaluation = ({ route ,navigation }) => {
   const { enrollmentID, courseCode, teacherID, studentId } = route.params;
 
   const [questions, setQuestions] = useState([]);
@@ -90,12 +91,16 @@ const ConfidentialEvaluation = ({ route }) => {
     setSubmitting(true);
 
     // =========================
-    // 1. SAVE LOCALLY (SQLite)
+    // SAVE LOCALLY SQLITE
     // =========================
-    await saveEvaluationLocal(enrollmentID, studentId, payload);
+    await saveEvaluationLocal(
+      enrollmentID,
+      studentId,
+      payload
+    );
 
     // =========================
-    // 2. SEND TO SERVER
+    // SEND TO SERVER
     // =========================
     const response = await fetch(
       `${BASE_URL}/studentDashboard/SubmitConfidentialEvaluation`,
@@ -115,14 +120,34 @@ const ConfidentialEvaluation = ({ route }) => {
       return;
     }
 
+    // =========================
+    // SAVE EVALUATED STATUS
+    // =========================
+    const key = `confidential_${studentId}_${enrollmentID}`;
+
+    await AsyncStorage.setItem(key, "true");
+
     Alert.alert(
       "Success",
-      "Saved locally + submitted to server successfully"
+      "Evaluation submitted successfully",
+      [
+        {
+          text: "OK",
+          onPress: () => {
+            // GO BACK
+            navigation.goBack();
+          },
+        },
+      ]
     );
 
   } catch (error) {
     console.log("Submit Error:", error);
-    Alert.alert("Error", "Submission failed");
+
+    Alert.alert(
+      "Error",
+      "Submission failed"
+    );
   } finally {
     setSubmitting(false);
   }

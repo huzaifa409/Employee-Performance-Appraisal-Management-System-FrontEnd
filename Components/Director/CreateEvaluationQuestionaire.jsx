@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
@@ -24,150 +24,189 @@ const CreateEvaluationQuestionaire = () => {
         { label: "Society ChairPerson Evaluation", value: 6, typeText: "Society ChairPerson Evaluation" },
     ]);
 
-
     const [selectedEvalTypeText, setSelectedEvalTypeText] = useState(null);
-
-   
     const [selectedEvalType, setSelectedEvalType] = useState(null);
 
-    
+    // ✅ Question Text
     const [questionText, setQuestionText] = useState("");
 
-   
+    // ✅ Critical Checkbox State
+    const [isCritical, setIsCritical] = useState(false);
+
+    // ✅ Questions List
     const [questions, setQuestions] = useState([]);
 
-   
+    // ✅ Edit Index
     const [editIndex, setEditIndex] = useState(null);
 
-
-  
+    // ✅ ADD / UPDATE QUESTION
     const handleAddQuestion = () => {
+
         if (!questionText.trim()) return;
 
+        const questionObj = {
+            questionText: questionText,
+            isCritical: isCritical,
+        };
+
         if (editIndex !== null) {
+
             const updated = [...questions];
-            updated[editIndex] = questionText;
+
+            updated[editIndex] = questionObj;
+
             setQuestions(updated);
+
             setEditIndex(null);
+
         } else {
-            setQuestions([...questions, questionText]);
+
+            setQuestions([...questions, questionObj]);
         }
 
+        // RESET
         setQuestionText("");
+        setIsCritical(false);
     };
 
-
-    
+    // ✅ DELETE QUESTION
     const handleDelete = (index) => {
+
         const updated = questions.filter((_, i) => i !== index);
+
         setQuestions(updated);
 
         if (editIndex === index) {
+
             setEditIndex(null);
             setQuestionText("");
+            setIsCritical(false);
         }
     };
 
-
-    
+    // ✅ EDIT QUESTION
     const handleEdit = (index) => {
-        setQuestionText(questions[index]);
+
+        setQuestionText(questions[index].questionText);
+
+        setIsCritical(questions[index].isCritical);
+
         setEditIndex(index);
     };
 
+    // ✅ SAVE TO API
     const handleSave = async () => {
 
-    if (!selectedEvalTypeText) {
-        alert("Please select evaluation type");
-        return;
-    }
-
-    if (questions.length === 0) {
-        alert("Please add at least one question");
-        return;
-    }
-
-    const payload = {
-        evaluationType: selectedEvalTypeText,
-        questions: questions,
-    };
-
-    console.log("Saving payload:", payload);
-
-    try {
-        const response = await fetch(
-            `${BASE_URL}/Questionnaire/Create`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            }
-        );
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.log("API Error:", errorText);
-            alert("Error saving questionnaire ");
+        if (!selectedEvalTypeText) {
+            alert("Please select evaluation type");
             return;
         }
 
-        await response.json();
+        if (questions.length === 0) {
+            alert("Please add at least one question");
+            return;
+        }
 
-        alert("Questionnaire saved successfully ");
+        // ✅ API PAYLOAD
+        const payload = {
+            evaluationType: selectedEvalTypeText,
 
-       
-        setQuestions([]);               
-        setQuestionText("");            
-        setSelectedEvalType(null);
-        setSelectedEvalTypeText(null);   
-        setEditIndex(null);
+            questions: questions.map((q) => ({
+                questionText: q.questionText,
+                isCritical: q.isCritical, // TRUE/FALSE → backend bool
+            })),
+        };
 
-    } catch (error) {
-        console.log("Network Error:", error);
-        alert("Network error ");
-    }
-};
+        console.log("Saving payload:", payload);
 
+        try {
 
+            const response = await fetch(
+                `${BASE_URL}/Questionnaire/Create`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            if (!response.ok) {
+
+                const errorText = await response.text();
+
+                console.log("API Error:", errorText);
+
+                alert("Error saving questionnaire");
+
+                return;
+            }
+
+            await response.json();
+
+            alert("Questionnaire saved successfully");
+
+            // RESET
+            setQuestions([]);
+            setQuestionText("");
+            setSelectedEvalType(null);
+            setSelectedEvalTypeText(null);
+            setEditIndex(null);
+            setIsCritical(false);
+
+        } catch (error) {
+
+            console.log("Network Error:", error);
+
+            alert("Network error");
+        }
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: "#f3f6f4" }}>
 
-           
             <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
 
-              
+                {/* HEADER */}
                 <View style={ss.header}>
+
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
+
                         <View style={ss.logoCircle}>
                             <Image
                                 source={require("../../Assets/BIIT_logo.png")}
                                 style={ss.logo}
                             />
                         </View>
+
                         <View style={{ marginLeft: 10 }}>
                             <Text style={ss.headerTitle}>
                                 Create Evaluation Questionnaire
                             </Text>
+
                             <Text style={ss.headerSubtitle}>
                                 Manage and Create Evaluation forms
                             </Text>
                         </View>
+
                     </View>
+
                 </View>
 
-              
+                {/* INFO */}
                 <View style={ss.infoBox}>
                     <Text style={ss.infoText}>
                         Create Custom Evaluation Forms For Your Institution
                     </Text>
                 </View>
 
-               
+                {/* DROPDOWN */}
                 <View style={{ padding: 15 }}>
-                    <Text style={ss.sectionTitle}>Select Evaluation Type</Text>
+
+                    <Text style={ss.sectionTitle}>
+                        Select Evaluation Type
+                    </Text>
 
                     <Dropdown
                         style={ss.dropdown}
@@ -184,11 +223,15 @@ const CreateEvaluationQuestionaire = () => {
 
                 </View>
 
-                
+                {/* QUESTION INPUT */}
                 <View style={{ paddingHorizontal: 15 }}>
-                    <Text style={ss.sectionTitle}>Enter Question</Text>
+
+                    <Text style={ss.sectionTitle}>
+                        Enter Question
+                    </Text>
 
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
+
                         <TextInput
                             value={questionText}
                             onChangeText={setQuestionText}
@@ -196,21 +239,50 @@ const CreateEvaluationQuestionaire = () => {
                             style={ss.questionInput}
                         />
 
-                        <TouchableOpacity style={ss.addBtn} onPress={handleAddQuestion}>
+                        <TouchableOpacity
+                            style={ss.addBtn}
+                            onPress={handleAddQuestion}
+                        >
                             <Text style={{ color: "#fff", fontWeight: "700" }}>
                                 {editIndex !== null ? "Update" : "+ Add"}
                             </Text>
                         </TouchableOpacity>
+
                     </View>
+
+                    {/* ✅ CRITICAL CHECKBOX */}
+                    <TouchableOpacity
+                        style={ss.checkboxContainer}
+                        onPress={() => setIsCritical(!isCritical)}
+                    >
+
+                        <Icon
+                            name={
+                                isCritical
+                                    ? "check-box"
+                                    : "check-box-outline-blank"
+                            }
+                            size={24}
+                            color="#2e7d32"
+                        />
+
+                        <Text style={ss.checkboxText}>
+                            Mark as Critical Question
+                        </Text>
+
+                    </TouchableOpacity>
+
                 </View>
 
-                
+                {/* QUESTIONS LIST */}
                 <View style={{ paddingHorizontal: 15, marginTop: 15 }}>
+
                     <Text style={ss.sectionTitle}>
                         Questions Added ({questions.length})
                     </Text>
 
                     {questions.map((q, index) => (
+
                         <View key={index} style={ss.questionCard}>
 
                             <View style={ss.numberCircle}>
@@ -219,42 +291,78 @@ const CreateEvaluationQuestionaire = () => {
                                 </Text>
                             </View>
 
-                            <Text style={ss.questionText}>{q}</Text>
+                            <View style={{ flex: 1 }}>
+
+                                <Text style={ss.questionText}>
+                                    {q.questionText}
+                                </Text>
+
+                                {/* ✅ CRITICAL BADGE */}
+                                {q.isCritical && (
+                                    <View style={ss.criticalBadge}>
+                                        <Text style={ss.criticalText}>
+                                            Critical
+                                        </Text>
+                                    </View>
+                                )}
+
+                            </View>
 
                             <View style={{ flexDirection: "row" }}>
-                                <TouchableOpacity onPress={() => handleEdit(index)}>
-                                    <Icon name="edit" size={22} color="#2e7d32" />
+
+                                <TouchableOpacity
+                                    onPress={() => handleEdit(index)}
+                                >
+                                    <Icon
+                                        name="edit"
+                                        size={22}
+                                        color="#2e7d32"
+                                    />
                                 </TouchableOpacity>
 
                                 <TouchableOpacity
                                     onPress={() => handleDelete(index)}
                                     style={{ marginLeft: 12 }}
                                 >
-                                    <Icon name="delete" size={22} color="red" />
+                                    <Icon
+                                        name="delete"
+                                        size={22}
+                                        color="red"
+                                    />
                                 </TouchableOpacity>
+
                             </View>
 
                         </View>
                     ))}
+
                 </View>
 
             </ScrollView>
 
-
+            {/* BOTTOM BUTTON */}
             <View style={ss.bottomBar}>
-                <TouchableOpacity style={ss.saveBtn} onPress={handleSave}>
+
+                <TouchableOpacity
+                    style={ss.saveBtn}
+                    onPress={handleSave}
+                >
                     <Text style={ss.saveBtnText}>
                         Save / Submit Form
                     </Text>
                 </TouchableOpacity>
+
             </View>
 
         </View>
     );
-}
+};
 
 const ss = StyleSheet.create({
-    container: { backgroundColor: "#f3f6f4" },
+
+    container: {
+        backgroundColor: "#f3f6f4"
+    },
 
     header: {
         backgroundColor: "#fff",
@@ -275,11 +383,22 @@ const ss = StyleSheet.create({
         alignItems: "center"
     },
 
-    logo: { width: 34, height: 34, resizeMode: "contain" },
+    logo: {
+        width: 34,
+        height: 34,
+        resizeMode: "contain"
+    },
 
-    headerTitle: { fontWeight: "700", fontSize: 16 },
+    headerTitle: {
+        fontWeight: "700",
+        fontSize: 16
+    },
 
-    headerSubtitle: { fontSize: 12, color: "#666", paddingTop: 3 },
+    headerSubtitle: {
+        fontSize: 12,
+        color: "#666",
+        paddingTop: 3
+    },
 
     infoBox: {
         backgroundColor: '#c3edd2',
@@ -288,9 +407,16 @@ const ss = StyleSheet.create({
         borderRadius: 10
     },
 
-    infoText: { color: "#000", fontSize: 13 },
+    infoText: {
+        color: "#000",
+        fontSize: 13
+    },
 
-    sectionTitle: { fontSize: 17, fontWeight: "700", marginBottom: 6 },
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: "700",
+        marginBottom: 6
+    },
 
     dropdown: {
         height: 40,
@@ -320,6 +446,19 @@ const ss = StyleSheet.create({
         alignItems: "center",
     },
 
+    checkboxContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 12,
+    },
+
+    checkboxText: {
+        marginLeft: 8,
+        fontSize: 14,
+        color: "#333",
+        fontWeight: "600",
+    },
+
     questionCard: {
         flexDirection: "row",
         alignItems: "center",
@@ -340,9 +479,23 @@ const ss = StyleSheet.create({
     },
 
     questionText: {
-        flex: 1,
         fontSize: 14,
         color: "#333",
+    },
+
+    criticalBadge: {
+        marginTop: 6,
+        backgroundColor: "#ffebee",
+        alignSelf: "flex-start",
+        paddingHorizontal: 10,
+        paddingVertical: 3,
+        borderRadius: 10,
+    },
+
+    criticalText: {
+        color: "#d32f2f",
+        fontSize: 12,
+        fontWeight: "700",
     },
 
     bottomBar: {

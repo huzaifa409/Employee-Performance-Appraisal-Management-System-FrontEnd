@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useFocusEffect } from "@react-navigation/native";
+
 import BASE_URL from "../../API-URL/API";
 
 const Confidential = ({ route, navigation }) => {
@@ -16,6 +20,9 @@ const Confidential = ({ route, navigation }) => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // =========================
+  // FETCH COURSES
+  // =========================
   const fetchCourses = async () => {
     try {
       const response = await fetch(
@@ -28,7 +35,24 @@ const Confidential = ({ route, navigation }) => {
       }
 
       const data = await response.json();
-      setCourses(data);
+
+      // =========================
+      // CHECK EVALUATED STATUS
+      // =========================
+      const updatedData = await Promise.all(
+        data.map(async (item) => {
+          const key = `confidential_${studentId}_${item.EnrollmentID}`;
+
+          const alreadyEvaluated = await AsyncStorage.getItem(key);
+
+          return {
+            ...item,
+            IsEvaluated: alreadyEvaluated === "true",
+          };
+        })
+      );
+
+      setCourses(updatedData);
     } catch (err) {
       Alert.alert("Error", err.message);
     } finally {
@@ -40,15 +64,43 @@ const Confidential = ({ route, navigation }) => {
     fetchCourses();
   }, []);
 
+  // =========================
+  // REFRESH WHEN SCREEN FOCUSES
+  // =========================
+  useFocusEffect(
+    useCallback(() => {
+      fetchCourses();
+    }, [])
+  );
+
+  // =========================
+  // RENDER COURSE
+  // =========================
   const renderCourse = ({ item }) => (
     <View style={styles.card}>
-      <Text style={styles.code}>{item.CourseCode}</Text>
-      <Text style={styles.title}>{item.CourseTitle}</Text>
-      <Text style={styles.teacher}>{item.TeacherName}</Text>
-      <Text style={styles.session}>{item.SessionName}</Text>
+
+      <Text style={styles.code}>
+        {item.CourseCode}
+      </Text>
+
+      <Text style={styles.title}>
+        {item.CourseTitle}
+      </Text>
+
+      <Text style={styles.teacher}>
+        {item.TeacherName}
+      </Text>
+
+      <Text style={styles.session}>
+        {item.SessionName}
+      </Text>
 
       <TouchableOpacity
-        style={styles.button}
+        disabled={item.IsEvaluated}
+        style={[
+          styles.button,
+          item.IsEvaluated && styles.disabledButton,
+        ]}
         onPress={() =>
           navigation.navigate("ConfidentialEvaluation", {
             enrollmentID: item.EnrollmentID,
@@ -58,26 +110,41 @@ const Confidential = ({ route, navigation }) => {
           })
         }
       >
-        <Text style={styles.buttonText}>Evaluate</Text>
+        <Text style={styles.buttonText}>
+          {item.IsEvaluated
+            ? "Already Evaluated"
+            : "Evaluate"}
+        </Text>
       </TouchableOpacity>
     </View>
   );
 
+  // =========================
+  // LOADING
+  // =========================
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color="#28a745" />
+        <ActivityIndicator
+          size="large"
+          color="#28a745"
+        />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Confidential Evaluation</Text>
+
+      <Text style={styles.header}>
+        Confidential Evaluation
+      </Text>
 
       <FlatList
         data={courses}
-        keyExtractor={(item) => item.EnrollmentID.toString()}
+        keyExtractor={(item) =>
+          item.EnrollmentID.toString()
+        }
         renderItem={renderCourse}
       />
     </View>
@@ -87,8 +154,17 @@ const Confidential = ({ route, navigation }) => {
 export default Confidential;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: "#f8f9fa" },
-  loader: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: {
+    flex: 1,
+    padding: 15,
+    backgroundColor: "#f8f9fa",
+  },
+
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 
   header: {
     fontSize: 18,
@@ -113,9 +189,21 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 
-  title: { fontSize: 16, fontWeight: "600", marginTop: 5 },
-  teacher: { color: "#6c757d" },
-  session: { fontSize: 12, color: "#6c757d", marginBottom: 10 },
+  title: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 5,
+  },
+
+  teacher: {
+    color: "#6c757d",
+  },
+
+  session: {
+    fontSize: 12,
+    color: "#6c757d",
+    marginBottom: 10,
+  },
 
   button: {
     backgroundColor: "#28a745",
@@ -123,5 +211,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontWeight: "bold" },
+
+  disabledButton: {
+    backgroundColor: "#9ca3af",
+  },
+
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
 });
