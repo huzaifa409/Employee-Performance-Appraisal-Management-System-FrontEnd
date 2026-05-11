@@ -222,7 +222,9 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
 
       <TouchableOpacity
         style={[styles.block, styles.blockGreen]}
-        onPress={() => navigation.navigate("ClassHeldReportScreen")}
+        onPress={() => navigation.navigate("ClassHeldReportScreen",{
+           teacherId: userId,
+        })}
       >
         <View style={[styles.iconBox, { backgroundColor: "#7c3aed" }]}>
           <Icon name="event-available" size={24} color="#fff" />
@@ -236,7 +238,10 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
 
       <TouchableOpacity
         style={[styles.block, styles.blockPurple]}
-        onPress={() => navigation.navigate("CourseManagementEvaluationScreen")}
+        onPress={() => navigation.navigate("CourseManagementEvaluationScreen", {
+          teacherId: userId,
+          teacherName: teacherName,
+        })}
       >
         <View style={[styles.iconBox, { backgroundColor: "#16a34a" }]}>
           <Icon name="menu-book" size={24} color="#fff" />
@@ -248,7 +253,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         <Icon name="chevron-right" size={26} color="#16a34a" />
       </TouchableOpacity>
 
-     
+
 
       <TouchableOpacity style={[styles.block, styles.blockOrange]}
 
@@ -265,22 +270,22 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
 
 
       <TouchableOpacity
-  style={[styles.block, styles.blockPink]}
-  onPress={() => navigation.navigate("SocietyEvaluationScreen", {userId: userId })}
->
-  <View style={[styles.iconBox, { backgroundColor: "#db2777" }]}>
-    <Icon name="diversity-3" size={24} color="#fff" />
-  </View>
+        style={[styles.block, styles.blockPink]}
+        onPress={() => navigation.navigate("SocietyEvaluationScreen", { userId: userId })}
+      >
+        <View style={[styles.iconBox, { backgroundColor: "#db2777" }]}>
+          <Icon name="diversity-3" size={24} color="#fff" />
+        </View>
 
-  <View style={{ flex: 1 }} >
-    <Text style={styles.blockTitle}>Evaluate Society Members</Text>
-    <Text style={styles.blockDesc}>
-      Evaluate members based on performance
-    </Text>
-  </View>
+        <View style={{ flex: 1 }} >
+          <Text style={styles.blockTitle}>Evaluate Society Members</Text>
+          <Text style={styles.blockDesc}>
+            Evaluate members based on performance
+          </Text>
+        </View>
 
-  <Icon name="chevron-right" size={26} color="#db2777" />
-</TouchableOpacity>
+        <Icon name="chevron-right" size={26} color="#db2777" />
+      </TouchableOpacity>
 
       {/* ================= LOGOUT ================= */}
       <TouchableOpacity
@@ -424,7 +429,7 @@ const styles = StyleSheet.create({
 
   logoutText: { color: "#fff", fontWeight: "700" },
   blockPink: {
-  backgroundColor: "#fdf2f8",
-  borderColor: "#fbcfe8",
-},
+    backgroundColor: "#fdf2f8",
+    borderColor: "#fbcfe8",
+  },
 });
