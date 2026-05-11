@@ -38,7 +38,7 @@ const DirectorDashboard = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
-      SESSION BAR
+      {/* SESSION BAR */}
       <View style={ss.sessionBar}>
         <Text style={{ color: "#fff" }}> </Text>
         <View style={ss.sessionBadge}>

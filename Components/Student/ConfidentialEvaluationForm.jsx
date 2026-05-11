@@ -20,7 +20,7 @@ const options = [
   { label: "Poor", score: 1 },
 ];
 
-const ConfidentialEvaluation = ({ route ,navigation }) => {
+const ConfidentialEvaluation = ({ route, navigation }) => {
   const { enrollmentID, courseCode, teacherID, studentId } = route.params;
 
   const [questions, setQuestions] = useState([]);
@@ -29,7 +29,7 @@ const ConfidentialEvaluation = ({ route ,navigation }) => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-      initDB();
+    initDB();
     fetchQuestions();
   }, []);
 
@@ -72,86 +72,87 @@ const ConfidentialEvaluation = ({ route ,navigation }) => {
   };
 
   // Submit evaluation
- const handleSubmit = async () => {
-  if (Object.keys(answers).length !== questions.length) {
-    Alert.alert("Error", "Please answer all questions");
-    return;
-  }
-
-  const payload = {
-    EnrollmentId: enrollmentID,
-    StudentId: studentId,
-    Answers: questions.map((q) => ({
-      questionId: q.QuestionID,
-      score: answers[q.QuestionID],
-    })),
-  };
-
-  try {
-    setSubmitting(true);
-
-    // =========================
-    // SAVE LOCALLY SQLITE
-    // =========================
-    await saveEvaluationLocal(
-      enrollmentID,
-      studentId,
-      payload
-    );
-
-    // =========================
-    // SEND TO SERVER
-    // =========================
-    const response = await fetch(
-      `${BASE_URL}/studentDashboard/SubmitConfidentialEvaluation`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    const text = await response.text();
-
-    if (!response.ok) {
-      Alert.alert("Server Error", text);
+  const handleSubmit = async () => {
+    if (Object.keys(answers).length !== questions.length) {
+      Alert.alert("Error", "Please answer all questions");
       return;
     }
 
-    // =========================
-    // SAVE EVALUATED STATUS
-    // =========================
-    const key = `confidential_${studentId}_${enrollmentID}`;
+    const payload = {
+      EnrollmentId: enrollmentID,
+      StudentId: studentId,
+      Answers: questions.map((q) => ({
+        questionId: q.QuestionID,
+        score: answers[q.QuestionID],
+      })),
+    };
 
-    await AsyncStorage.setItem(key, "true");
+    try {
+      setSubmitting(true);
 
-    Alert.alert(
-      "Success",
-      "Evaluation submitted successfully",
-      [
+      // =========================
+      // SAVE LOCALLY SQLITE
+      // =========================
+      await saveEvaluationLocal(
+        enrollmentID,
+        studentId,
+        payload
+      );
+
+      // =========================
+      // SEND TO SERVER
+      // =========================
+      const response = await fetch(
+        `${BASE_URL}/studentDashboard/SubmitConfidentialEvaluation`,
         {
-          text: "OK",
-          onPress: () => {
-            // GO BACK
-            navigation.goBack();
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        },
-      ]
-    );
+          body: JSON.stringify(payload),
+        }
+      );
 
-  } catch (error) {
-    console.log("Submit Error:", error);
+      const text = await response.text();
 
-    Alert.alert(
-      "Error",
-      "Submission failed"
-    );
-  } finally {
-    setSubmitting(false);
-  }
-};
+      if (!response.ok) {
+        console.log("SERVER RESPONSE:", text);
+        Alert.alert("Server Error", text);
+        return;
+      }
+
+      // =========================
+      // SAVE EVALUATED STATUS
+      // =========================
+      const key = `confidential_${studentId}_${enrollmentID}`;
+
+      await AsyncStorage.setItem(key, "true");
+
+      Alert.alert(
+        "Success",
+        "Evaluation submitted successfully",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // GO BACK
+              navigation.goBack();
+            },
+          },
+        ]
+      );
+
+    } catch (error) {
+      console.log("Submit Error:", error);
+
+      Alert.alert(
+        "Error",
+        "Submission failed"
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Loading state
   if (loading) {

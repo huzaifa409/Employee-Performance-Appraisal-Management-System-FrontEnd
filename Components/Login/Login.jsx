@@ -1,11 +1,22 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, Alert } from 'react-native'
-import BASE_URL from "../../API-URL/API";
-const Login = ({ onLogin }) => {
+import {
+    View,
+    Text,
+    StyleSheet,
+    Image,
+    TextInput,
+    TouchableOpacity,
+    Alert,
+    ActivityIndicator
+} from 'react-native';
 
+import BASE_URL from "../../API-URL/API";
+
+const Login = ({ onLogin }) => {
 
     const [username, setUsername] = useState("");
     const [Password, setPassword] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const LoginUser = async () => {
 
@@ -14,102 +25,118 @@ const Login = ({ onLogin }) => {
             return;
         }
 
+        setLoading(true);
 
         try {
-            const response = await fetch(`${BASE_URL}/Users/Login?id=${username}&password=${Password}`,
+
+            const response = await fetch(
+                `${BASE_URL}/Users/Login?id=${username}&password=${Password}`,
                 {
                     method: "POST"
                 }
             );
 
             if (!response.ok) {
+                setLoading(false);
                 Alert.alert("Login Failed", "Invalid username or password");
                 return;
             }
 
             const data = await response.json();
 
+            setLoading(false);
 
             onLogin(
                 data.role.toUpperCase(),
                 data.userId
             );
 
-
             Alert.alert("Success", data.message);
 
         } catch (error) {
+
+            setLoading(false);
+
             Alert.alert("Error", "Server not responding");
             console.log(error);
         }
-
-
-    }
+    };
 
     return (
 
         <View style={{ backgroundColor: "white", flex: 1 }}>
-
-
 
             <View style={ss.logoheader}>
                 <Image
                     source={require("../../Assets/BIIT_logo.png")}
                     style={ss.logo}
                     resizeMode="contain"
-
                 />
-                <Text style={ss.headerTitle}>Employee Performance Appraisal Management System</Text>
-                <Text style={ss.headerSubtitle}>Welcome Back! Please Login to Continue...</Text>
+
+                <Text style={ss.headerTitle}>
+                    Employee Performance Appraisal Management System
+                </Text>
+
+                <Text style={ss.headerSubtitle}>
+                    Welcome Back! Please Login to Continue...
+                </Text>
             </View>
 
             <View>
-                <Text style={[ss.headerTitle, { fontSize: 30 }]}>Login</Text>
+                <Text style={[ss.headerTitle, { fontSize: 30 }]}>
+                    Login
+                </Text>
             </View>
 
             <View>
-                <Text style={{ paddingLeft: 25, fontWeight: 'bold', fontSize: 20, paddingTop: 30, color: "#1E7F4D" }}>Username</Text>
+                <Text style={ss.label}>Username</Text>
+
                 <TextInput
                     placeholder="Enter Your Username"
                     onChangeText={setUsername}
                     placeholderTextColor={'black'}
                     style={ss.input}
+                    editable={!loading}
                 />
             </View>
+
             <View>
-                <Text style={{ paddingLeft: 25, fontWeight: 'bold', fontSize: 20, paddingTop: 30, color: "#1E7F4D" }}>Password</Text>
+                <Text style={ss.label}>Password</Text>
+
                 <TextInput
                     placeholder="Enter Your Password"
                     onChangeText={setPassword}
                     placeholderTextColor={'black'}
                     secureTextEntry
-
                     style={ss.input}
+                    editable={!loading}
                 />
             </View>
 
+            <TouchableOpacity
+                style={ss.button}
+                onPress={LoginUser}
+                disabled={loading}
+            >
 
-            <TouchableOpacity style={ss.button} onPress={LoginUser}>
-                <Text style={ss.buttonText}>Login</Text>
+                {
+                    loading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={ss.buttonText}>Login</Text>
+                    )
+                }
 
             </TouchableOpacity>
 
-
-
         </View>
-
-    )
-
-}
-
+    );
+};
 
 const ss = StyleSheet.create({
 
-
     logoheader: {
         backgroundColor: "#eafaf1",
-        // width: 144,
-        // height: 144,
         borderRadius: 22,
         justifyContent: "center",
         alignItems: "center",
@@ -137,13 +164,21 @@ const ss = StyleSheet.create({
         maxWidth: 250,
         paddingTop: 10
     },
+
+    label: {
+        paddingLeft: 25,
+        fontWeight: 'bold',
+        fontSize: 20,
+        paddingTop: 30,
+        color: "#1E7F4D"
+    },
+
     input: {
         color: "black",
         height: 50,
         backgroundColor: "#FFFFFF",
         borderRadius: 10,
         paddingHorizontal: 15,
-        marginBottom: 0,
         borderWidth: 1,
         borderColor: "#E0E0E0",
         shadowColor: "#000",
@@ -153,6 +188,7 @@ const ss = StyleSheet.create({
         elevation: 2,
         marginHorizontal: 18
     },
+
     button: {
         height: 50,
         backgroundColor: "#0F9D58",
@@ -162,14 +198,13 @@ const ss = StyleSheet.create({
         marginTop: 50,
         marginHorizontal: 20
     },
+
     buttonText: {
         color: "#FFFFFF",
         fontSize: 16,
         fontWeight: "600",
     },
 
-
 });
-
 
 export default Login;

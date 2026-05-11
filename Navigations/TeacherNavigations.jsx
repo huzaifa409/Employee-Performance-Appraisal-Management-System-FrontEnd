@@ -4,7 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TeacherDashboard from "../Components/Teacher/TeacherDashboard"
 import ClassHeldReportScreen from "../Components/Teacher/ClassHeldReport"
 import CourseManagementEvaluationScreen from "../Components/Teacher/CourseManagementEvaluationScreen"
-import ViewCHRDetails from "../Components/Teacher/ViewCHRDetails"
+// import ViewCHRDetails from "../Components/Teacher/ViewCHRDetails"
 import TeachersCoursesScreen from "../Components/Teacher/TeacherCourseScreen"
 import PeerEvaluationScreen from "../Components/Teacher/PeerEvaluationScreen"
 import SeeOwnPerformance from "../Components/Teacher/SeeOwnPerformance"
@@ -36,11 +36,11 @@ const TeacherNavigation = ({ userId, onLogout }) => {
         component={CourseManagementEvaluationScreen}
         options={{ headerShown: false }}
       />
-      <stack.Screen
+      {/* <stack.Screen
         name="ViewCHRDetails"
         component={ViewCHRDetails}
         options={{ headerShown: false }}
-      />
+      /> */}
       <stack.Screen
         name="TeachersCoursesScreen"
         children={(props) => (
