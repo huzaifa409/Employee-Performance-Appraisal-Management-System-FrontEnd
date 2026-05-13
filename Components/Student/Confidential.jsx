@@ -107,6 +107,7 @@ const Confidential = ({ route, navigation }) => {
             courseCode: item.CourseCode,
             teacherID: item.TeacherID,
             studentId: studentId,
+            session: item.SessionID
           })
         }
       >

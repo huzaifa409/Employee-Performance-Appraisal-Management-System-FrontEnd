@@ -7,11 +7,26 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Button
 } from "react-native";
 import BASE_URL from "../../API-URL/API";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { initDB, saveEvaluationLocal } from "../../Database/db";
+
+
+
+
+// Clear Asyn Storage
+
+
+// const clearAllStorage = async () => {
+//   try {
+//     await AsyncStorage.clear();
+//     console.log('AsyncStorage cleared');
+//   } catch (error) {
+//     console.log('Clear Error:', error);
+//   }
+// };
 
 const options = [
   { label: "Excellent", score: 4 },
@@ -21,7 +36,8 @@ const options = [
 ];
 
 const ConfidentialEvaluation = ({ route, navigation }) => {
-  const { enrollmentID, courseCode, teacherID, studentId } = route.params;
+  const { enrollmentID, courseCode, teacherID, studentId ,session } = route.params;
+  console.log(session);
 
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -79,13 +95,19 @@ const ConfidentialEvaluation = ({ route, navigation }) => {
     }
 
     const payload = {
-      EnrollmentId: enrollmentID,
-      StudentId: studentId,
-      Answers: questions.map((q) => ({
-        questionId: q.QuestionID,
-        score: answers[q.QuestionID],
-      })),
-    };
+  EnrollmentId: enrollmentID,
+  StudentId: studentId,
+
+  teacherId: teacherID,
+  sessionId: session,
+  courseCode: courseCode,
+
+  Answers: questions.map((q) => ({
+    questionID: q.QuestionID,
+    questionText: q.QuestionText,
+    score: answers[q.QuestionID],
+  })),
+};
 
     try {
       setSubmitting(true);
@@ -209,6 +231,12 @@ const ConfidentialEvaluation = ({ route, navigation }) => {
           {submitting ? "Submitting..." : "Submit Evaluation"}
         </Text>
       </TouchableOpacity>
+
+      {/* <View>
+        <Button onPress={clearAllStorage} title="Clear"/> 
+      </View> */}
+
+      
     </ScrollView>
   );
 };
