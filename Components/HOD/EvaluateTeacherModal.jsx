@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  TextInput, // Added TextInput
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import BASE_URL from "../../API-URL/API";
@@ -18,12 +19,12 @@ const EvaluateTeacherModal = ({
   subjects,
   userId,
   sessionId,
+  onSuccess,
 }) => {
-
   const [evaluations, setEvaluations] = useState({});
 
   const updateEvaluation = (index, field, value) => {
-    setEvaluations(prev => ({
+    setEvaluations((prev) => ({
       ...prev,
       [index]: {
         ...prev[index],
@@ -33,86 +34,63 @@ const EvaluateTeacherModal = ({
   };
 
   useEffect(() => {
-  setEvaluations({});
-  console.log("USER ID:", userId);
-}, [visible]);
+    setEvaluations({});
+  }, [visible]);
 
-  // ✅ SAVE FUNCTION (IMPORTANT)
- const saveEvaluation = async () => {
-  try {
+  const saveEvaluation = async () => {
+    try {
+      const payload = {
+        TeacherID: teacher?.teacherID,
+        SessionID: sessionId,
+        HODID: userId,
+        Evaluations: subjects.map((sub, index) => {
+          const evalData = evaluations[index] || {};
+          return {
+            CourseCode: sub.code,
+            PaperStatus: evalData.paper === true ? "On-Time" : "Late",
+            FolderStatus: evalData.folder === true ? "On-Time" : "Late",
+            Remarks: evalData.remarks || "", 
+          };
+        }),
+      };
 
-    const payload = {
-      TeacherID: teacher?.teacherID,
-      SessionID: sessionId,
-      HODID: userId,
+      const res = await fetch(`${BASE_URL}/CourseManagement/SaveEvaluation`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-      Evaluations: subjects.map((sub, index) => {
-        const evalData = evaluations[index] || {};
-
-        return {
-          CourseCode: sub.code,
-
-          // IMPORTANT FIX:
-          PaperStatus: evalData.paper === true ? "On-Time"
-                       : evalData.paper === false ? "Late"
-                       : "Late",
-
-          FolderStatus: evalData.folder === true ? "On-Time"
-                        : evalData.folder === false ? "Late"
-                        : "Late",
-        };
-      })
-    };
-
-    console.log("PAYLOAD SENT:", JSON.stringify(payload, null, 2));
-
-    const res = await fetch(`${BASE_URL}/CourseManagement/SaveEvaluation`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    console.log("RESPONSE:", data);
-
-    if (res.ok) {
-      alert("Saved Successfully");
-      onClose();
-    } else {
-      alert(data.message || "Save failed");
+      if (res.ok) {
+        Alert.alert("Success", "Evaluation saved!");
+        onSuccess(teacher.teacherID); // Notify parent to disable button
+        onClose();
+      } else {
+        Alert.alert("Error", "Save failed");
+      }
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Server error");
     }
-
-  } catch (err) {
-    console.log(err);
-    alert("Server error");
-  }
-};
+  };
 
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={ss.overlay}>
-
         <View style={ss.modalBox}>
-
           {/* HEADER */}
           <View style={ss.modalHeader}>
             <Text style={ss.modalTitle}>Evaluate {teacher?.teacher}</Text>
             <TouchableOpacity onPress={onClose}>
-              <Icon name="close" size={24} />
+              <Icon name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView>
-
+          <ScrollView showsVerticalScrollIndicator={false}>
             {subjects.map((sub, index) => {
               const data = evaluations[index] || {};
 
               return (
                 <View key={index} style={ss.subjectBox}>
-
                   <Text style={ss.subjectTitle}>
                     {sub.course} ({sub.code})
                   </Text>
@@ -120,74 +98,64 @@ const EvaluateTeacherModal = ({
                   {/* PAPER */}
                   <Text style={ss.label}>Paper Submission</Text>
                   <View style={ss.optionRow}>
-
                     <TouchableOpacity
-                      style={[
-                        ss.optionBtn,
-                        data.paper === true && ss.yesActive
-                      ]}
+                      style={[ss.optionBtn, data.paper === true && ss.yesActive]}
                       onPress={() => updateEvaluation(index, "paper", true)}
                     >
-                      <Text>On Time</Text>
+                      <Text style={data.paper === true ? ss.activeText : null}>On Time</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[
-                        ss.optionBtn,
-                        data.paper === false && ss.noActive
-                      ]}
+                      style={[ss.optionBtn, data.paper === false && ss.noActive]}
                       onPress={() => updateEvaluation(index, "paper", false)}
                     >
-                      <Text>Late</Text>
+                      <Text style={data.paper === false ? ss.activeText : null}>Late</Text>
                     </TouchableOpacity>
-
                   </View>
 
                   {/* FOLDER */}
                   <Text style={ss.label}>Folder Submission</Text>
                   <View style={ss.optionRow}>
-
                     <TouchableOpacity
-                      style={[
-                        ss.optionBtn,
-                        data.folder === true && ss.yesActive
-                      ]}
+                      style={[ss.optionBtn, data.folder === true && ss.yesActive]}
                       onPress={() => updateEvaluation(index, "folder", true)}
                     >
-                      <Text>On Time</Text>
+                      <Text style={data.folder === true ? ss.activeText : null}>On Time</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                      style={[
-                        ss.optionBtn,
-                        data.folder === false && ss.noActive
-                      ]}
+                      style={[ss.optionBtn, data.folder === false && ss.noActive]}
                       onPress={() => updateEvaluation(index, "folder", false)}
                     >
-                      <Text>Late</Text>
+                      <Text style={data.folder === false ? ss.activeText : null}>Late</Text>
                     </TouchableOpacity>
-
                   </View>
 
+                  {/* ✅ REMARKS INPUT */}
+                  <Text style={ss.label}>Remarks / Comments</Text>
+                  <TextInput
+                    style={ss.remarksInput}
+                    placeholder="Enter submission notes..."
+                    placeholderTextColor="#999"
+                    multiline
+                    value={data.remarks || ""}
+                    onChangeText={(text) => updateEvaluation(index, "remarks", text)}
+                  />
                 </View>
               );
             })}
-
           </ScrollView>
 
           {/* FOOTER */}
           <View style={ss.footer}>
-
-            <TouchableOpacity onPress={onClose}>
-              <Text>Cancel</Text>
+            <TouchableOpacity style={ss.cancelBtn} onPress={onClose}>
+              <Text style={{ color: "#666", fontWeight: "600" }}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={ss.saveBtn} onPress={saveEvaluation}>
-              <Text style={{ color: "#fff" }}>Save</Text>
+              <Text style={{ color: "#fff", fontWeight: "600" }}>Save Evaluation</Text>
             </TouchableOpacity>
-
           </View>
-
         </View>
       </View>
     </Modal>
@@ -197,54 +165,62 @@ const EvaluateTeacherModal = ({
 const ss = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalBox: {
     width: "92%",
-    maxHeight: "90%",
+    maxHeight: "85%",
     backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 20,
+    padding: 20,
+    elevation: 10,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 10,
+    alignItems: "center",
+    marginBottom: 15,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "bold",
     color: "#0F9D58",
   },
   subjectBox: {
-    borderWidth: 1,
-    borderColor: "#cceedd",
-    padding: 12,
-    marginBottom: 14,
+    backgroundColor: "#f9f9f9",
+    padding: 15,
+    marginBottom: 15,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
   },
   subjectTitle: {
-    fontWeight: "600",
-    marginBottom: 8,
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
   },
   label: {
-    marginTop: 6,
+    marginTop: 10,
     fontSize: 13,
+    color: "#555",
+    fontWeight: "600",
   },
   optionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 6,
+    marginTop: 8,
   },
   optionBtn: {
     width: "48%",
-    padding: 10,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
+    borderColor: "#ddd",
+    borderRadius: 8,
     alignItems: "center",
+    backgroundColor: "#fff",
   },
   yesActive: {
     backgroundColor: "#eafaf1",
@@ -254,16 +230,39 @@ const ss = StyleSheet.create({
     backgroundColor: "#fdecea",
     borderColor: "#e53935",
   },
+  activeText: {
+    fontWeight: "bold",
+  },
+  remarksInput: {
+    marginTop: 8,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 60,
+    textAlignVertical: "top",
+    color: "#333",
+  },
   footer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 10,
+    alignItems: "center",
+    marginTop: 15,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  cancelBtn: {
+    padding: 12,
   },
   saveBtn: {
     backgroundColor: "#0F9D58",
-    padding: 12,
+    paddingHorizontal: 25,
+    paddingVertical: 12,
     borderRadius: 10,
-  }
+    elevation: 2,
+  },
 });
 
 export default EvaluateTeacherModal;

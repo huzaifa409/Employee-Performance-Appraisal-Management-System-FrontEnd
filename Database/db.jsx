@@ -377,6 +377,9 @@ export const getConfidentialAverageForTeacher = async (
 
 
 
+
+
+
 export const getConfidentialScoresForPerformance = async (
   teacherId,
   sessionId,
@@ -496,5 +499,72 @@ export const getConfidentialScoresForPerformance = async (
 
     return [];
 
+  }
+};
+
+
+
+//////////Extra
+
+
+export const ExtragetConfidentialScoresForPerformance = async (
+  teacherId,
+  sessionId,
+  courseCode = null
+) => {
+  try {
+    const conn = await db;
+
+    const res = await conn.executeSql(
+      `SELECT * FROM ConfidentialEvaluation`
+    );
+
+    let scores = [];
+
+    res[0].rows.raw().forEach((row) => {
+      try {
+        const data = JSON.parse(row.payload);
+
+        // =========================
+        // CLEAN NORMALIZATION
+        // =========================
+        const dbTeacher = String(data.teacherId || "").trim();
+        const dbSession = String(data.sessionId || "").trim();
+        const dbCourse = String(data.courseCode || "").trim().toLowerCase();
+
+        const tId = String(teacherId || "").trim();
+        const sId = String(sessionId || "").trim();
+        const cCode = String(courseCode || "").trim().toLowerCase();
+
+        // =========================
+        // STRICT FILTERING
+        // =========================
+        if (dbTeacher !== tId) return;
+        if (dbSession !== sId) return;
+
+        if (courseCode && dbCourse !== cCode) return;
+
+        // =========================
+        // EXTRACT SCORES
+        // =========================
+        const answers = data.Answers || [];
+
+        answers.forEach((a) => {
+          if (a?.score !== undefined && a?.score !== null) {
+            scores.push(Number(a.score));
+          }
+        });
+
+      } catch (e) {
+        console.log("Parse error:", e);
+      }
+    });
+
+    console.log("CONFIDENTIAL SCORES:", scores);
+
+    return scores;
+  } catch (error) {
+    console.log("CONF ERROR:", error);
+    return [];
   }
 };

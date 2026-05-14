@@ -17,6 +17,7 @@ import DetailPerformance from "../Components/Director/DetailPerformance"
 import OverallPerformance from "../Components/Director/OverallPerformance"
 import CourseEvaluationScreen from "../Components/Director/ExtraFeatures/CourseEvaluationScreen"
 import QuestionAnalysis from "../Components/Director/ExtraFeatures/QuestionAnalysis"
+import ExtraComparison from "../Components/Director/ExtraComparison"
 const Stack = createNativeStackNavigator();
 
 const DirectorNavigation = ({ onLogout }) => {
@@ -112,6 +113,20 @@ const DirectorNavigation = ({ onLogout }) => {
         component={QuestionAnalysis} 
         options={{ headerShown: false }}
       />
+
+
+
+
+
+                          {/* Extra Comparison */}
+      <Stack.Screen
+        name="ExtraComparison"
+        component={ExtraComparison} 
+        options={{ headerShown: false }}
+      />
+
+
+
 
     </Stack.Navigator>
   );
