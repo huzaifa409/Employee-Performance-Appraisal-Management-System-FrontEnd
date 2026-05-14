@@ -181,12 +181,12 @@ const ComparisonResult = ({ route }) => {
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Comparison Result</Text>
 
-      {/* WINNER */}
+      {/* WINNER
       <View style={styles.winnerCard}>
         <Text style={styles.winnerText}>
            {winner === "Tie" ? "It's a Tie!" : `${winner} Wins`}
         </Text>
-      </View>
+      </View> */}
 
       {/* CARDS */}
       <View style={styles.row}>

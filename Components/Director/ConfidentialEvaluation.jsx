@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  TextInput,
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -15,10 +16,13 @@ const ConfidentialEvaluation = () => {
   const [emails, setEmails] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState(null);
   const [evaluations, setEvaluations] = useState([]);
+  const [filteredEvaluations, setFilteredEvaluations] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [loadingEmails, setLoadingEmails] = useState(true);
-  const [emailFilter, setEmailFilter] = useState("unread");
 
+  const [emailFilter, setEmailFilter] = useState("unread");
+  const [searchText, setSearchText] = useState("");
 
   const filterOptions = [
     { label: "Unread Emails", value: "unread" },
@@ -48,33 +52,6 @@ const ConfidentialEvaluation = () => {
   // =========================
   // FETCH EVALUATIONS
   // =========================
-  // const fetchEvaluations = async () => {
-  //   if (!selectedEmail) return;
-
-  //   try {
-  //     setLoading(true);
-
-  //     const res = await fetch(`${BASE_URL}/Confidential/get-evaluations`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         mail: selectedEmail.mail,
-  //       }),
-  //     });
-
-  //     const data = await res.json();
-  //     console.log("API RESPONSE:", data);
-  //     setEvaluations(data.data || []);
-  //   } catch (err) {
-  //     console.log(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-
   const fetchEvaluations = async (filter = emailFilter) => {
     if (!selectedEmail) return;
 
@@ -88,14 +65,16 @@ const ConfidentialEvaluation = () => {
         },
         body: JSON.stringify({
           mail: selectedEmail.mail,
-          filter: filter, // 🔥 SEND FILTER
+          filter: filter,
         }),
       });
 
       const data = await res.json();
-      console.log("API RESPONSE:", data);
 
-      setEvaluations(data.data || []);
+      const list = data.data || [];
+      setEvaluations(list);
+      setFilteredEvaluations(list); // default
+
     } catch (err) {
       console.log(err);
     } finally {
@@ -103,68 +82,65 @@ const ConfidentialEvaluation = () => {
     }
   };
 
+  // =========================
+  // SEARCH FILTER (LOCAL)
+  // =========================
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredEvaluations(evaluations);
+      return;
+    }
 
+    const text = searchText.toLowerCase();
+
+    const filtered = evaluations.filter((item) => {
+      return (
+        item.teacherName?.toLowerCase().includes(text) ||
+        item.teacherId?.toLowerCase().includes(text) ||
+        item.studentName?.toLowerCase().includes(text) ||
+        item.studentId?.toLowerCase().includes(text) ||
+        item.subjectCode?.toLowerCase().includes(text)
+      );
+    });
+
+    setFilteredEvaluations(filtered);
+  }, [searchText, evaluations]);
 
   // =========================
   // CARD RENDER
   // =========================
   const renderItem = ({ item }) => (
     <View style={styles.card}>
-      {/* Card Header */}
       <View style={styles.cardHeader}>
         <View style={styles.subjectBadge}>
           <Icon name="menu-book" size={16} color="#fff" />
           <Text style={styles.subjectCode}>{item.subjectCode}</Text>
         </View>
+
         <View style={styles.sessionBadge}>
           <Icon name="event" size={12} color="#16a34a" />
           <Text style={styles.sessionText}>{item.session}</Text>
         </View>
       </View>
 
-      {/* Info Rows */}
       <View style={styles.infoSection}>
-        <View style={styles.infoRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="school" size={15} color="#16a34a" />
-          </View>
-          <View>
-            <Text style={styles.infoLabel}>Student</Text>
-            <Text style={styles.infoValue}>
-              {item.studentName}{" "}
-              <Text style={styles.infoId}>({item.studentId})</Text>
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.infoValue}>
+          Student: {item.studentName} ({item.studentId})
+        </Text>
 
-        <View style={styles.dividerDot} />
-
-        <View style={styles.infoRow}>
-          <View style={styles.iconCircle}>
-            <Icon name="person" size={15} color="#2563eb" />
-          </View>
-          <View>
-            <Text style={styles.infoLabel}>Teacher</Text>
-            <Text style={styles.infoValue}>
-              {item.teacherName}{" "}
-              <Text style={styles.infoId}>({item.teacherId})</Text>
-            </Text>
-          </View>
-        </View>
+        <Text style={styles.infoValue}>
+          Teacher: {item.teacherName} ({item.teacherId})
+        </Text>
       </View>
 
-      {/* Divider */}
-      <View style={styles.cardDivider} />
+      <Text style={styles.evalTitle}>Evaluation Scores</Text>
 
-      {/* Evaluation Q&A */}
-      <Text style={styles.evalTitle}>
-        <Icon name="bar-chart" size={13} color="#64748b" /> Evaluation Scores
-      </Text>
       {item.evaluation?.map((q, i) => (
         <View key={i} style={styles.qaRow}>
           <Text style={styles.qaText} numberOfLines={2}>
             {q.questionText}
           </Text>
+
           <View style={styles.scorePill}>
             <Icon name="star" size={12} color="#f59e0b" />
             <Text style={styles.scoreText}>{q.score}</Text>
@@ -176,54 +152,31 @@ const ConfidentialEvaluation = () => {
 
   return (
     <View style={styles.container}>
-      {/* HEADER BANNER */}
+      {/* HEADER */}
       <View style={styles.heroBanner}>
-        <View style={styles.heroIconWrap}>
-          <Icon name="lock" size={22} color="#16a34a" />
-        </View>
-        <View>
-          <Text style={styles.heroTitle}>Confidential</Text>
-          <Text style={styles.heroSubtitle}>Evaluation Records</Text>
-        </View>
+        <Icon name="lock" size={22} color="#16a34a" />
+        <Text style={styles.heroTitle}>Confidential Evaluations</Text>
       </View>
 
-      {/* SELECTOR CARD */}
+      {/* EMAIL + FILTER */}
       <View style={styles.selectorCard}>
-        <Text style={styles.selectorLabel}>
-          <Icon name="email" size={13} color="#64748b" /> Select Email Address
-        </Text>
+        <Text style={styles.selectorLabel}>Select Email</Text>
 
         {loadingEmails ? (
-          <ActivityIndicator size="large" color="#16a34a" style={{ marginTop: 10 }} />
+          <ActivityIndicator color="#16a34a" />
         ) : (
           <Dropdown
             style={styles.dropdown}
-            placeholderStyle={styles.placeholder}
-            selectedTextStyle={styles.selectedText}
-            containerStyle={styles.dropdownContainer}
-            itemTextStyle={styles.dropdownItemText}
             data={emails}
             labelField="mail"
             valueField="mail"
-            placeholder="Choose an email..."
             value={selectedEmail?.mail}
+            placeholder="Select email"
             onChange={(item) => setSelectedEmail(item)}
-            renderLeftIcon={() => (
-              <Icon
-                name="alternate-email"
-                size={18}
-                color="#16a34a"
-                style={{ marginRight: 8 }}
-              />
-            )}
           />
-
-
         )}
 
-        <Text style={styles.selectorLabel}>
-          <Icon name="filter-list" size={13} color="#64748b" /> Filter Emails
-        </Text>
+        <Text style={styles.selectorLabel}>Filter</Text>
 
         <Dropdown
           style={styles.dropdown}
@@ -233,62 +186,44 @@ const ConfidentialEvaluation = () => {
           value={emailFilter}
           onChange={(item) => {
             setEmailFilter(item.value);
-            fetchEvaluations(item.value); // 🔥 auto reload
+            fetchEvaluations(item.value);
           }}
-          renderLeftIcon={() => (
-            <Icon name="tune" size={18} color="#16a34a" style={{ marginRight: 8 }} />
-          )}
         />
 
-        {/* BUTTON */}
         <TouchableOpacity
-          style={[styles.button, !selectedEmail && styles.buttonDisabled]}
+          style={styles.button}
           onPress={() => fetchEvaluations(emailFilter)}
-          activeOpacity={0.85}
         >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <>
-              <Icon name="search" size={18} color="#fff" style={{ marginRight: 6 }} />
-              <Text style={styles.buttonText}>Load Evaluations</Text>
-            </>
-          )}
+          <Text style={styles.buttonText}>Load</Text>
         </TouchableOpacity>
       </View>
 
-      {/* RESULTS COUNT */}
-      {evaluations.length > 0 && (
-        <View style={styles.resultsHeader}>
-          <Icon name="assessment" size={15} color="#16a34a" />
-          <Text style={styles.resultsText}>
-            {evaluations.length} record{evaluations.length > 1 ? "s" : ""} found
-          </Text>
-        </View>
-      )}
+      {/* ================= SEARCH BAR ================= */}
+      <View style={styles.searchBox}>
+        <Icon name="search" size={20} color="#64748b" />
+        <TextInput
+          placeholder="Search by teacher, course, student..."
+          placeholderTextColor="#94a3b8"
+          value={searchText}
+          onChangeText={setSearchText}
+          style={styles.searchInput}
+        />
+      </View>
 
-      {/* LIST */}
+      {/* RESULTS */}
       <FlatList
-        data={evaluations}
+        data={filteredEvaluations}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          !loading && (
-            <View style={styles.emptyState}>
-              <Icon name="inbox" size={48} color="#cbd5e1" />
-              <Text style={styles.emptyText}>No evaluations to display</Text>
-              <Text style={styles.emptyHint}>Select an email and tap Load</Text>
-            </View>
-          )
-        }
+        contentContainerStyle={styles.list}
       />
     </View>
   );
 };
 
 export default ConfidentialEvaluation;
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -597,4 +532,24 @@ const styles = StyleSheet.create({
     color: "#cbd5e1",
     fontWeight: "500",
   },
+
+  searchBox: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#fff",
+  marginHorizontal: 16,
+  paddingHorizontal: 12,
+  borderRadius: 12,
+  marginBottom: 10,
+  borderWidth: 1,
+  borderColor: "#e2e8f0",
+  height: 48,
+},
+
+searchInput: {
+  flex: 1,
+  marginLeft: 8,
+  fontSize: 14,
+  color: "#0f172a",
+},
 });

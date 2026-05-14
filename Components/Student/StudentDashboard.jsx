@@ -19,6 +19,32 @@ const StudentDashboard = ({ userId, navigation,onLogout  }) => {
   const [confidentialActive, setConfidentialActive] = useState(false);
   const [submittedEnrollments, setSubmittedEnrollments] = useState([]);
   const [studentName, setStudentName] = useState("");
+  const [isConfidentialEligible, setIsConfidentialEligible] = useState(false);
+
+
+
+
+
+const checkConfidentialEligibility = async () => {
+  try {
+    const response = await fetch(
+      `${BASE_URL}/studentDashboard/CheckConfidentialStatus/${userId}`
+    );
+
+    const data = await response.json();
+
+    console.log("Confidential Status:", data);
+
+    setIsConfidentialEligible(data?.isConfidential === true);
+  } catch (error) {
+    console.log("Confidential check error:", error);
+    setIsConfidentialEligible(false);
+  }
+};
+
+
+
+
 
   // ================= FETCH SUBMITTED =================
   const fetchSubmittedEvaluations = async () => {
@@ -131,6 +157,7 @@ const handleLogout = () => {
     fetchCourses();
     fetchSubmittedEvaluations();
     fetchEvaluationFlags();
+    checkConfidentialEligibility(); 
   }, [userId]);
 
   // ================= RENDER COURSE =================
@@ -191,22 +218,33 @@ const handleLogout = () => {
 
         <View style={{ flexDirection: "column", alignItems: "flex-end" }}>
           <TouchableOpacity
-            disabled={!confidentialActive}
-            style={[
-              styles.confidentialButton,
-              { opacity: confidentialActive ? 1 : 0.5, marginBottom: 5 },
-            ]}
-            onPress={() =>
-              confidentialActive &&
-              navigation.navigate("Confidential", {
-                studentId: userId,
-              })
-            }
-          >
-            <Text style={styles.confidentialButtonText}>
-              Confidential Evaluation
-            </Text>
-          </TouchableOpacity>
+  disabled={!confidentialActive || !isConfidentialEligible}
+  style={[
+    styles.confidentialButton,
+    {
+      opacity:
+        confidentialActive && isConfidentialEligible ? 1 : 0.5,
+      marginBottom: 5,
+    },
+  ]}
+  onPress={() =>
+    confidentialActive &&
+    isConfidentialEligible &&
+    navigation.navigate("Confidential", {
+      studentId: userId,
+    })
+  }
+>
+  <Text style={styles.confidentialButtonText}>
+    Confidential Evaluation
+  </Text>
+
+  {!isConfidentialEligible && (
+    <Text style={{ fontSize: 10, color: "#fff", marginTop: 2 }}>
+      Not Eligible
+    </Text>
+  )}
+</TouchableOpacity>
 
           
         </View>
