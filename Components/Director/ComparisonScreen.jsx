@@ -224,33 +224,33 @@ const ComparisonScreen = ({ navigation }) => {
       {/* BUTTON */}
       <TouchableOpacity
         style={styles.compareBtn}
-        // onPress={() =>
-        //   navigation.navigate("ComparisonResult", {
-        //     mode,
-        //     teacherA,
-        //     teacherB,
-        //     courseCode: selectedCourse,
-        //     session1,
-        //     session2,
-        //   })
-        // }
-
-
-
         onPress={() =>
-          navigation.navigate("ExtraComparison", {
+          navigation.navigate("ComparisonResult", {
             mode,
             teacherA,
             teacherB,
             courseCode: selectedCourse,
-
-            session1:
-              session1 ||
-              sessions[sessions.length - 1]?.value,
-
+            session1,
             session2,
           })
         }
+
+
+
+        // onPress={() =>
+        //   navigation.navigate("ExtraComparison", {
+        //     mode,
+        //     teacherA,
+        //     teacherB,
+        //     courseCode: selectedCourse,
+
+        //     session1:
+        //       session1 ||
+        //       sessions[sessions.length - 1]?.value,
+
+        //     session2,
+        //   })
+        // }
 
 
       >

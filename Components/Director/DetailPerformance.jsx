@@ -12,6 +12,7 @@ import {
 import { Dropdown } from "react-native-element-dropdown";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BarChart } from "react-native-gifted-charts";
 
 import BASE_URL from "../../API-URL/API";
 
@@ -290,7 +291,7 @@ const EvalSelector = ({
             style={[
               s.evalChipText,
               active &&
-                s.evalChipTextActive,
+              s.evalChipTextActive,
             ]}
           >
             {opt.label.split(" ")[0]}
@@ -411,6 +412,16 @@ const DetailPerformance = ({
   const [loading, setLoading] =
     useState(false);
 
+
+
+  const chartData = data.map((item, index) => ({
+    value: Number(item.AverageScore || 0),
+    label: `Q${index + 1}`,
+    frontColor: "#16a34a",
+  }));
+
+
+
   // ─────────────────────────────────────
   // FETCH SESSIONS
   // ─────────────────────────────────────
@@ -524,6 +535,44 @@ const DetailPerformance = ({
       (o) =>
         o.value === evaluationType
     )?.label ?? "";
+
+
+
+
+
+
+  const QuestionGraph = ({ data }) => {
+    if (!data || data.length === 0) return null;
+
+    const chartData = data.map((item, index) => ({
+      value: Number(item.AverageScore || 0),
+      label: `Q${index + 1}`,
+      frontColor: "#16a34a",
+    }));
+
+    return (
+      <View style={graphStyles.container}>
+        <Text style={graphStyles.title}>
+          Question-wise Average Performance
+        </Text>
+
+        <BarChart
+          data={chartData}
+          barWidth={18}
+          spacing={18}
+          roundedTop
+          roundedBottom
+          hideRules={false}
+          yAxisThickness={0}
+          xAxisThickness={1}
+          maxValue={4}
+          noOfSections={4}
+          yAxisTextStyle={{ color: "#666", fontSize: 10 }}
+          xAxisLabelTextStyle={{ color: "#666", fontSize: 10 }}
+        />
+      </View>
+    );
+  };
 
   return (
     <View
@@ -640,7 +689,11 @@ const DetailPerformance = ({
 
         {/* SUMMARY */}
         {data.length > 0 && (
-          <SummaryStrip data={data} />
+          <>
+            <SummaryStrip data={data} />
+
+            <QuestionGraph data={data} />
+          </>
         )}
 
         {/* CONTENT */}
@@ -1087,5 +1140,24 @@ const s = StyleSheet.create({
     fontSize: 13,
     textAlign: "center",
     paddingHorizontal: 30,
+  },
+
+});
+
+
+const graphStyles = StyleSheet.create({
+  container: {
+    backgroundColor: "#fff",
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#d1fae5",
+    marginBottom: 14,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#052e16",
+    marginBottom: 10,
   },
 });

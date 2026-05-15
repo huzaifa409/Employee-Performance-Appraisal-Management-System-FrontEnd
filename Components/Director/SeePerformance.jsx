@@ -129,7 +129,7 @@ console.log(
         <View style={s.nameBlock}>
           <Text
             style={s.teacherName}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {item.Name}
           </Text>
@@ -473,7 +473,7 @@ const PerformanceScreen = ({ navigation }) => {
       value: val,
 
       label: t.Name
-        ? t.Name.split(" ")[0]
+        ? t.Name.split(" ")[1]
         : `T${index + 1}`,
 
       frontColor: barColor(val),
