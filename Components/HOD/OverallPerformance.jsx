@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Alert,
   StatusBar,
-  Dimensions,
 } from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import { BarChart } from "react-native-gifted-charts";
@@ -16,81 +15,30 @@ import { BarChart } from "react-native-gifted-charts";
 import BASE_URL from "../../API-URL/API";
 import { getConfidentialByTeacherSession } from "../../Database/db";
 
-const { width: SCREEN_W } = Dimensions.get("window");
-
-// ─── Palette ──────────────────────────────────────────────────────────────────
-const C = {
-  bg: "#eef4fb",
-  bgCard: "#ffffff",
-  bgCardAlt: "#f4f8fd",
-  border: "#d0e2f5",
-  borderGlow: "#a8c9ef",
-  accent: "#2563eb",
-  accentBright: "#3b82f6",
-  accentGlow: "rgba(37,99,235,0.10)",
-  teal: "#0d9488",
-  tealGlow: "rgba(13,148,136,0.10)",
-  gold: "#d97706",
-  goldGlow: "rgba(217,119,6,0.10)",
-  red: "#dc2626",
-  redGlow: "rgba(220,38,38,0.10)",
-  green: "#16a34a",
-  greenGlow: "rgba(22,163,74,0.10)",
-  textPrimary: "#0f172a",
-  textSecondary: "#475569",
-  textMuted: "#94a3b8",
-  white: "#ffffff",
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const barColor = (pct) =>
-  pct >= 80 ? C.green : pct >= 55 ? C.gold : C.red;
-
-const scoreColor = (pct) =>
-  pct >= 80 ? C.green : pct >= 55 ? C.gold : C.red;
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-const SectionTitle = ({ label }) => (
-  <View style={s.sectionTitleRow}>
-    <View style={s.sectionDot} />
-    <Text style={s.sectionTitleText}>{label}</Text>
-  </View>
-);
-
-const StatPill = ({ value, label, color }) => (
-  <View style={[s.statPill, { borderColor: color + "55", backgroundColor: color + "18" }]}>
-    <Text style={[s.statPillValue, { color }]}>{value}</Text>
-    <Text style={s.statPillLabel}>{label}</Text>
-  </View>
-);
-
-const ProgressBar = ({ pct, color }) => (
-  <View style={s.progressTrack}>
-    <View style={[s.progressFill, { width: `${Math.min(pct, 100)}%`, backgroundColor: color }]} />
-  </View>
-);
+// ─── Simple color helpers ─────────────────────────────────────────────────────
+function getScoreColor(pct) {
+  if (pct >= 80) return "#16a34a"; // green
+  if (pct >= 55) return "#d97706"; // amber
+  return "#dc2626";                // red
+}
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const OverallPerformanceScreen = () => {
-  const [sessions, setSessions] = useState([]);
-  const [teachers, setTeachers] = useState([]);
+  const [sessions, setSessions]               = useState([]);
+  const [teachers, setTeachers]               = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [data, setData]                       = useState(null);
+  const [loading, setLoading]                 = useState(false);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
   const [confidentialAvgScore, setConfidentialAvgScore] = useState(0);
 
-  // ── NEW: KPI filter state ──────────────────────────────────────────────────
-  const [kpiOptions, setKpiOptions] = useState([]);
-  const [selectedKpi, setSelectedKpi] = useState(null); // null = "All KPIs"
-  const [loadingKpis, setLoadingKpis] = useState(false);
-
   useEffect(() => { loadSessions(); }, []);
 
+  // ── Load sessions on mount ────────────────────────────────────────────────
   const loadSessions = async () => {
     try {
-      const res = await fetch(`${BASE_URL}/OverallPerformance/list`);
+      const res  = await fetch(`${BASE_URL}/OverallPerformance/list`);
       const json = await res.json();
       setSessions(json.map((item) => ({ label: item.name, value: item.id })));
     } catch {
@@ -98,117 +46,95 @@ const OverallPerformanceScreen = () => {
     }
   };
 
+  // ── When session changes, load teachers + KPI options ────────────────────
   const handleSessionChange = async (sessionId) => {
-    try {
-      setSelectedSession(sessionId);
-      setSelectedTeacher(null);
-      setTeachers([]);
-      setData(null);
-      setSelectedKpi(null);
-      setKpiOptions([]);
-      setLoadingTeachers(true);
+    setSelectedSession(sessionId);
+    setSelectedTeacher(null);
+    setTeachers([]);
+    setData(null);
 
-      const res = await fetch(`${BASE_URL}/OverallPerformance/GetTeachersBySession/${sessionId}`);
+    // Load teachers
+    try {
+      setLoadingTeachers(true);
+      const res  = await fetch(`${BASE_URL}/OverallPerformance/GetTeachersBySession/${sessionId}`);
       const json = await res.json();
       setTeachers(json.map((item) => ({ label: item.Name, value: item.UserID })));
-      setLoadingTeachers(false);
-
-      // ── Load KPI options for this session ─────────────────────────────────
-      setLoadingKpis(true);
-      try {
-        const kpiRes = await fetch(`${BASE_URL}/OverallPerformance/GetKpiTypesBySession/${sessionId}`);
-        const kpiJson = await kpiRes.json();
-        // Prepend the "All KPIs" option
-        const options = [
-          { label: "All KPIs", value: null },
-          ...kpiJson.map((k) => ({ label: k.name, value: k.id })),
-        ];
-        setKpiOptions(options);
-      } catch {
-        setKpiOptions([{ label: "All KPIs", value: null }]);
-      } finally {
-        setLoadingKpis(false);
-      }
     } catch {
-      setLoadingTeachers(false);
       Alert.alert("Error", "Failed to load teachers");
+    } finally {
+      setLoadingTeachers(false);
     }
   };
 
-  // ── Fetch analysis — called both from button and KPI dropdown change ───────
-  const fetchAnalysis = async (kpiIdOverride) => {
+  // ── Fetch and process performance data ───────────────────────────────────
+  const fetchAnalysis = async () => {
     if (!selectedSession || !selectedTeacher) return;
-    const kpiId = kpiIdOverride !== undefined ? kpiIdOverride : selectedKpi;
+
     try {
       setLoading(true);
 
-      // Build URL — only append kpiId param when a specific KPI is selected
-      let url = `${BASE_URL}/OverallPerformance/GetTeacherPerformanceAnalytics/${selectedTeacher}/${selectedSession}`;
-      if (kpiId !== null && kpiId !== undefined) {
-        url += `?kpiId=${kpiId}`;
-      }
+      const url = `${BASE_URL}/OverallPerformance/GetTeacherPerformanceAnalytics/${selectedTeacher}/${selectedSession}`;
 
-      const res = await fetch(url);
+      const res  = await fetch(url);
       const json = await res.json();
 
       if (json.Status === "Empty") {
         Alert.alert("No Data", json.Message);
         setData(null);
-        setLoading(false);
         return;
       }
 
+      // Confidential score from local DB
       const localScores = await getConfidentialByTeacherSession(selectedTeacher);
-      let avgScore = 0;
-      if (localScores.length > 0) {
-        avgScore = localScores.reduce((a, b) => a + b, 0) / localScores.length;
-      }
+      const avgScore = localScores.length > 0
+        ? localScores.reduce((a, b) => a + b, 0) / localScores.length
+        : 0;
       setConfidentialAvgScore(avgScore);
 
-      let totalEarned = 0, totalMax = 0;
+      // Recalculate totals
+      let totalEarned = 0;
+      let totalMax    = 0;
+
       json.Breakdown.forEach((kpi) => {
         let kpiTotal = 0;
+
         kpi.SubDetails.forEach((sub) => {
           if (sub.SubName?.toLowerCase().includes("confidential")) {
-            const calculated = sub.MaxScale > 0 ? (avgScore / sub.MaxScale) * sub.SubMax : 0;
+            const calculated = sub.MaxScale > 0
+              ? (avgScore / sub.MaxScale) * sub.SubMax
+              : 0;
             sub.SubAchieved = Number(calculated.toFixed(2));
           }
           sub.SubAchieved = Math.min(sub.SubAchieved, sub.SubMax);
           kpiTotal += sub.SubAchieved;
         });
+
         kpi.KPIAchieved = Number(Math.min(kpiTotal, kpi.KPIWeight).toFixed(2));
         totalEarned += kpi.KPIAchieved;
-        totalMax += kpi.KPIWeight;
+        totalMax    += kpi.KPIWeight;
       });
 
       json.OverallPercentage = totalMax > 0
-        ? Number(((totalEarned / totalMax) * 100).toFixed(2)) : 0;
+        ? Number(((totalEarned / totalMax) * 100).toFixed(2))
+        : 0;
 
       setData(json);
-      setLoading(false);
     } catch {
-      setLoading(false);
       Alert.alert("Error", "Failed to load performance data");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const generateAnalysis = () => {
+  const handleGeneratePress = () => {
     if (!selectedSession || !selectedTeacher) {
-      Alert.alert("Select Required Fields", "Please select both session and teacher.");
+      Alert.alert("Missing Fields", "Please select both a session and a teacher.");
       return;
     }
-    fetchAnalysis(selectedKpi);
+    fetchAnalysis();
   };
 
-  // ── When KPI filter changes after data is already loaded, re-fetch ─────────
-  const handleKpiChange = (kpiValue) => {
-    setSelectedKpi(kpiValue);
-    if (data) {
-      // Data already showing — re-fetch with new filter immediately
-      fetchAnalysis(kpiValue);
-    }
-  };
-
+  // ── Build bar chart data ──────────────────────────────────────────────────
   const getChartData = () => {
     if (!data) return [];
     return data.Breakdown.flatMap((kpi) =>
@@ -217,50 +143,37 @@ const OverallPerformanceScreen = () => {
         return {
           value: Number(pct.toFixed(1)),
           label: sub.SubName.split(" ")[0].substring(0, 6),
-          frontColor: barColor(pct),
+          frontColor: getScoreColor(pct),
           topLabelComponent: () => (
-            <Text style={{ color: C.textSecondary, fontSize: 9, marginBottom: 2 }}>
-              {pct.toFixed(0)}
-            </Text>
+            <Text style={styles.barTopLabel}>{pct.toFixed(0)}</Text>
           ),
         };
       })
     );
   };
 
-  const overallPct = data ? Number(data.OverallPercentage) : 0;
-  const mainColor = scoreColor(overallPct);
-
-  // Label shown in hero card for active filter
-  const activeKpiLabel = selectedKpi
-    ? kpiOptions.find((k) => k.value === selectedKpi)?.label ?? ""
-    : null;
+  const overallPct  = data ? Number(data.OverallPercentage) : 0;
+  const scoreColor  = getScoreColor(overallPct);
 
   return (
     <>
-      <StatusBar barStyle="dark-content" backgroundColor={C.bg} translucent={false} />
+      <StatusBar barStyle="dark-content" backgroundColor="#f0f4f8" />
 
-      <ScrollView
-        style={s.root}
-        contentContainerStyle={s.rootContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={s.pageHeader}>
-          <View style={s.pageBadge}>
-            <Text style={s.pageBadgeText}>◈  ANALYTICS</Text>
-          </View>
-          <Text style={s.pageTitle}>Overall{"\n"}Performance</Text>
-          <Text style={s.pageSub}>
-            Select session & teacher to generate a full evaluation report.
-          </Text>
-        </View>
+      <ScrollView style={styles.screen} contentContainerStyle={styles.screenContent}>
 
-        <View style={s.card}>
-          <SectionTitle label="FILTERS" />
+        {/* ── Page Header ── */}
+        <Text style={styles.pageTitle}>Overall Performance</Text>
+        <Text style={styles.pageSubtitle}>
+          Select a session and teacher to generate an evaluation report.
+        </Text>
 
-          <Text style={s.dropLabel}>Academic Session</Text>
+        {/* ── Filters Card ── */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Filters</Text>
+
+          <Text style={styles.label}>Academic Session</Text>
           <Dropdown
-            style={s.dropdown}
+            style={styles.dropdown}
             data={sessions}
             labelField="label"
             valueField="value"
@@ -269,15 +182,15 @@ const OverallPerformanceScreen = () => {
             onChange={(item) => handleSessionChange(item.value)}
           />
 
-          <Text style={s.dropLabel}>Teacher</Text>
+          <Text style={styles.label}>Teacher</Text>
           {loadingTeachers ? (
-            <View style={s.miniLoader}>
-              <ActivityIndicator size="small" color={C.accent} />
-              <Text style={s.miniLoaderText}>Loading teachers…</Text>
+            <View style={styles.loaderRow}>
+              <ActivityIndicator size="small" color="#2563eb" />
+              <Text style={styles.loaderText}>Loading teachers…</Text>
             </View>
           ) : (
             <Dropdown
-              style={[s.dropdown, !selectedSession && s.dropdownDisabled]}
+              style={[styles.dropdown, !selectedSession && styles.dropdownDisabled]}
               data={teachers}
               labelField="label"
               valueField="value"
@@ -288,111 +201,61 @@ const OverallPerformanceScreen = () => {
             />
           )}
 
-          {/* ── KPI Filter Dropdown ── */}
-          <Text style={[s.dropLabel, !selectedSession && { opacity: 0.4 }]}>
-            Filter by KPI
-          </Text>
-          {loadingKpis ? (
-            <View style={s.miniLoader}>
-              <ActivityIndicator size="small" color={C.accent} />
-              <Text style={s.miniLoaderText}>Loading KPIs…</Text>
-            </View>
-          ) : (
-            <View style={s.kpiDropdownWrapper}>
-              <Dropdown
-                style={[
-                  s.dropdown,
-                  s.kpiDropdown,
-                  !selectedSession && s.dropdownDisabled,
-                  // highlight border when a specific KPI is selected
-                  selectedKpi !== null && { borderColor: C.accentBright },
-                ]}
-                data={kpiOptions}
-                labelField="label"
-                valueField="value"
-                placeholder="All KPIs"
-                value={selectedKpi}
-                onChange={(item) => handleKpiChange(item.value)}
-                disable={!selectedSession || kpiOptions.length === 0}
-                renderLeftIcon={() => (
-                  <Text style={s.kpiDropdownIcon}>⬡ </Text>
-                )}
-              />
-              {/* Clear pill — shown only when a specific KPI is active */}
-              {selectedKpi !== null && (
-                <TouchableOpacity
-                  style={s.clearKpiBtn}
-                  onPress={() => handleKpiChange(null)}
-                >
-                  <Text style={s.clearKpiBtnText}>✕  Show All</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
-
           <TouchableOpacity
-            onPress={generateAnalysis}
-            style={[s.btn, (!selectedSession || !selectedTeacher) && s.btnDisabled]}
+            style={[
+              styles.generateButton,
+              (!selectedSession || !selectedTeacher) && styles.generateButtonDisabled,
+            ]}
+            onPress={handleGeneratePress}
             disabled={!selectedSession || !selectedTeacher}
           >
             {loading
-              ? <ActivityIndicator color={C.white} />
-              : <Text style={s.btnText}>⚡  Generate Analysis</Text>
+              ? <ActivityIndicator color="#fff" />
+              : <Text style={styles.generateButtonText}>Generate Analysis</Text>
             }
           </TouchableOpacity>
         </View>
 
+        {/* ── Results Section ── */}
         {data && (
           <>
-            {/* ── HERO SCORE CARD ── */}
-            <View style={[s.heroCard, { borderColor: mainColor + "55" }]}>
-              <View style={[s.heroGlow, { backgroundColor: mainColor }]} />
-              <View style={s.heroLeft}>
-                <View style={s.heroBadge}>
-                  <Text style={s.heroBadgeText}>FINAL SCORE</Text>
-                </View>
-                <Text style={s.heroName}>{data.TeacherName || "Teacher"}</Text>
-                <Text style={s.heroSession}>{data.SessionName || ""}</Text>
-
-                {/* Active KPI filter badge */}
-                {activeKpiLabel && (
-                  <View style={s.activeKpiBadge}>
-                    <Text style={s.activeKpiBadgeText}>⬡ {activeKpiLabel}</Text>
-                  </View>
-                )}
-
-                <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
-                  <StatPill value={`${data.Breakdown.length}`} label="KPIs" color={C.accent} />
-                  <StatPill
-                    value={data.Breakdown.reduce((s, k) => s + k.SubDetails.length, 0).toString()}
-                    label="Subs"
-                    color={C.teal}
-                  />
-                </View>
-              </View>
-
-              <View style={s.heroRight}>
-                <Text style={[s.heroScore, { color: mainColor }]}>
-                  {overallPct.toFixed(1)}
-                  <Text style={s.heroScorePct}>%</Text>
+            {/* Score Summary */}
+            <View style={[styles.card, styles.scoreCard]}>
+              <View style={styles.scoreCardLeft}>
+                <Text style={styles.teacherName}>{data.TeacherName || "Teacher"}</Text>
+                <Text style={styles.sessionName}>{data.SessionName || ""}</Text>
+                <Text style={styles.scoreCardMeta}>
+                  {data.Breakdown.length} KPIs  ·  {data.Breakdown.reduce((s, k) => s + k.SubDetails.length, 0)} Sub-indicators
                 </Text>
               </View>
+              <Text style={[styles.bigScore, { color: scoreColor }]}>
+                {overallPct.toFixed(1)}%
+              </Text>
             </View>
 
-            <View style={s.card}>
-              <SectionTitle label="OVERALL PROGRESS" />
-              <View style={s.overallProgressRow}>
-                <Text style={s.overallProgressLabel}>Achievement Rate</Text>
-                <Text style={[s.overallProgressPct, { color: mainColor }]}>
+            {/* Overall Progress Bar */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Overall Progress</Text>
+              <View style={styles.progressRow}>
+                <Text style={styles.progressLabel}>Achievement Rate</Text>
+                <Text style={[styles.progressPercent, { color: scoreColor }]}>
                   {overallPct.toFixed(2)}%
                 </Text>
               </View>
-              <ProgressBar pct={overallPct} color={mainColor} />
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.min(overallPct, 100)}%`, backgroundColor: scoreColor },
+                  ]}
+                />
+              </View>
             </View>
 
-            <View style={s.card}>
-              <SectionTitle label="PERFORMANCE CHART" />
-              <Text style={s.chartSubtitle}>All sub-indicators (% score)</Text>
+            {/* Bar Chart */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Performance Chart</Text>
+              <Text style={styles.chartNote}>All sub-indicators as % score</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <BarChart
                   data={getChartData()}
@@ -400,62 +263,58 @@ const OverallPerformanceScreen = () => {
                   spacing={14}
                   noOfSections={5}
                   maxValue={100}
-                  yAxisTextStyle={{ color: C.textMuted, fontSize: 10 }}
-                  xAxisLabelTextStyle={{ color: C.textSecondary, fontSize: 9 }}
+                  yAxisTextStyle={styles.chartAxisText}
+                  xAxisLabelTextStyle={styles.chartAxisText}
                   roundedTop
                   isAnimated
                 />
               </ScrollView>
             </View>
 
-            {/* ── DETAILED BREAKDOWN ── */}
-            <View style={s.card}>
-              <SectionTitle label="DETAILED BREAKDOWN" />
-
-              {/* Filter indicator strip */}
-              {activeKpiLabel && (
-                <View style={s.filterStrip}>
-                  <Text style={s.filterStripText}>
-                    Showing: <Text style={{ fontWeight: "700" }}>{activeKpiLabel}</Text>
-                  </Text>
-                  <TouchableOpacity onPress={() => handleKpiChange(null)}>
-                    <Text style={s.filterStripClear}>Show all</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+            {/* Detailed Breakdown */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Detailed Breakdown</Text>
 
               {data.Breakdown.map((kpi, i) => {
-                const kpiPct = kpi.KPIWeight > 0 ? (kpi.KPIAchieved / kpi.KPIWeight) * 100 : 0;
-                const kpiColor = barColor(kpiPct);
+                const kpiPct   = kpi.KPIWeight > 0 ? (kpi.KPIAchieved / kpi.KPIWeight) * 100 : 0;
+                const kpiColor = getScoreColor(kpiPct);
                 return (
-                  <View key={i} style={[s.kpiBlock, { borderColor: kpiColor + "33" }]}>
-                    <View style={s.kpiBlockHeader}>
-                      <View style={[s.kpiBlockBadge, { backgroundColor: kpiColor + "22", borderColor: kpiColor + "55" }]}>
-                        <Text style={[s.kpiBlockBadgeText, { color: kpiColor }]}>KPI {i + 1}</Text>
+                  <View key={i} style={styles.kpiBlock}>
+                    {/* KPI header */}
+                    <View style={styles.kpiHeader}>
+                      <View style={[styles.kpiBadge, { backgroundColor: kpiColor + "22" }]}>
+                        <Text style={[styles.kpiBadgeText, { color: kpiColor }]}>KPI {i + 1}</Text>
                       </View>
-                      <Text style={s.kpiBlockTitle}>{kpi.KPIName}</Text>
+                      <Text style={styles.kpiName}>{kpi.KPIName}</Text>
                     </View>
-                    <ProgressBar pct={kpiPct} color={kpiColor} />
-                    <View style={s.subList}>
-                      {kpi.SubDetails.map((sub, j) => {
-                        const subPct = sub.SubMax > 0 ? (sub.SubAchieved / sub.SubMax) * 100 : 0;
-                        const isConfidential = sub.SubName?.toLowerCase().includes("confidential");
-                        const subColor = isConfidential ? C.teal : barColor(subPct);
-                        return (
-                          <View key={j} style={s.subRow}>
-                            <View style={s.subRowLeft}>
-                              <View style={[s.subDot, { backgroundColor: subColor }]} />
-                              <Text style={s.subName}>
-                                {sub.SubName}{isConfidential && " 🔒"}
-                              </Text>
-                            </View>
-                            <Text style={[s.subPct, { color: subColor }]}>
-                              {subPct.toFixed(1)}%
-                            </Text>
-                          </View>
-                        );
-                      })}
+
+                    {/* KPI progress bar */}
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${Math.min(kpiPct, 100)}%`, backgroundColor: kpiColor },
+                        ]}
+                      />
                     </View>
+
+                    {/* Sub-indicators list */}
+                    {kpi.SubDetails.map((sub, j) => {
+                      const subPct          = sub.SubMax > 0 ? (sub.SubAchieved / sub.SubMax) * 100 : 0;
+                      const isConfidential  = sub.SubName?.toLowerCase().includes("confidential");
+                      const subColor        = isConfidential ? "#0d9488" : getScoreColor(subPct);
+                      return (
+                        <View key={j} style={styles.subRow}>
+                          <View style={[styles.subDot, { backgroundColor: subColor }]} />
+                          <Text style={styles.subName}>
+                            {sub.SubName}{isConfidential && " 🔒"}
+                          </Text>
+                          <Text style={[styles.subPercent, { color: subColor }]}>
+                            {subPct.toFixed(1)}%
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 );
               })}
@@ -471,124 +330,89 @@ const OverallPerformanceScreen = () => {
 
 export default OverallPerformanceScreen;
 
-const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  rootContent: { padding: 16, paddingBottom: 32 },
-  pageHeader: { marginBottom: 20, paddingTop: 8 },
-  pageBadge: {
-    alignSelf: "flex-start", backgroundColor: C.accentGlow,
-    borderWidth: 1, borderColor: C.accent + "55", borderRadius: 6,
-    paddingHorizontal: 10, paddingVertical: 4, marginBottom: 12,
-  },
-  pageBadgeText: { color: C.accentBright, fontSize: 10, fontWeight: "800", letterSpacing: 2 },
-  pageTitle: { color: C.textPrimary, fontSize: 34, fontWeight: "900", letterSpacing: -1, lineHeight: 40 },
-  pageSub: { color: C.textSecondary, fontSize: 13, marginTop: 8, lineHeight: 19 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const styles = StyleSheet.create({
+  // Screen
+  screen:        { flex: 1, backgroundColor: "#f0f4f8" },
+  screenContent: { padding: 16, paddingBottom: 32 },
+
+  // Page header
+  pageTitle:    { fontSize: 28, fontWeight: "800", color: "#0f172a", marginBottom: 6, marginTop: 8 },
+  pageSubtitle: { fontSize: 13, color: "#64748b", marginBottom: 20, lineHeight: 19 },
+
+  // Card
   card: {
-    backgroundColor: C.bgCard, borderRadius: 18, borderWidth: 1,
-    borderColor: C.border, padding: 18, marginBottom: 14,
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    padding: 16,
+    marginBottom: 14,
   },
-  sectionTitleRow: { flexDirection: "row", alignItems: "center", marginBottom: 16 },
-  sectionDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: C.accent, marginRight: 8 },
-  sectionTitleText: { color: C.textSecondary, fontSize: 11, fontWeight: "700", letterSpacing: 2 },
-  dropLabel: { color: C.textSecondary, fontSize: 12, fontWeight: "600", marginBottom: 7 },
+  cardTitle: { fontSize: 13, fontWeight: "700", color: "#64748b", marginBottom: 14, letterSpacing: 0.5 },
+
+  // Form labels & dropdowns
+  label:            { fontSize: 13, fontWeight: "600", color: "#475569", marginBottom: 6 },
+  labelDisabled:    { opacity: 0.4 },
   dropdown: {
-    height: 50, backgroundColor: C.bgCardAlt, borderWidth: 1,
-    borderColor: C.border, borderRadius: 12, paddingHorizontal: 14, marginBottom: 14,
+    height: 48,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginBottom: 14,
   },
   dropdownDisabled: { opacity: 0.4 },
+  dropdownActive:   { borderColor: "#2563eb" },
 
-  // ── KPI dropdown ────────────────────────────────────────────────────────────
-  kpiDropdownWrapper: { marginBottom: 0 },
-  kpiDropdown: {
-    borderStyle: "dashed",
-    marginBottom: 0,
-  },
-  kpiDropdownIcon: { color: C.accentBright, fontSize: 13, marginRight: 6 },
-  clearKpiBtn: {
-    alignSelf: "flex-start",
-    marginTop: 6,
-    marginBottom: 14,
-    backgroundColor: C.accentGlow,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: C.accent + "44",
-  },
-  clearKpiBtnText: { color: C.accentBright, fontSize: 12, fontWeight: "700" },
+  // Loading row
+  loaderRow: { flexDirection: "row", alignItems: "center", paddingVertical: 10, marginBottom: 14 },
+  loaderText: { color: "#64748b", fontSize: 13, marginLeft: 10 },
 
-  btn: {
-    backgroundColor: C.accent, borderRadius: 12, height: 52,
-    alignItems: "center", justifyContent: "center", marginTop: 14,
+  // Generate button
+  generateButton: {
+    backgroundColor: "#2563eb",
+    borderRadius: 10,
+    height: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
   },
-  btnDisabled: { backgroundColor: C.bgCardAlt, borderWidth: 1, borderColor: C.border },
-  btnText: { color: C.white, fontSize: 15, fontWeight: "800" },
-  miniLoader: { flexDirection: "row", alignItems: "center", paddingVertical: 12, marginBottom: 14 },
-  miniLoaderText: { color: C.textSecondary, fontSize: 13, marginLeft: 10 },
+  generateButtonDisabled: { backgroundColor: "#e2e8f0" },
+  generateButtonText:     { color: "#ffffff", fontSize: 15, fontWeight: "700" },
 
-  heroCard: {
-    backgroundColor: C.bgCard, borderRadius: 20, borderWidth: 1.5,
-    padding: 22, marginBottom: 14, flexDirection: "row",
-    justifyContent: "space-between", alignItems: "flex-start", overflow: "hidden",
-  },
-  heroGlow: {
-    position: "absolute", top: -60, right: -60,
-    width: 180, height: 180, borderRadius: 90, opacity: 0.07,
-  },
-  heroLeft: { flex: 1, paddingRight: 12 },
-  heroBadge: {
-    alignSelf: "flex-start", backgroundColor: C.accentGlow,
-    borderRadius: 5, paddingHorizontal: 8, paddingVertical: 3, marginBottom: 10,
-  },
-  heroBadgeText: { color: C.accentBright, fontSize: 9, fontWeight: "800", letterSpacing: 2 },
-  heroName: { color: C.textPrimary, fontSize: 18, fontWeight: "800" },
-  heroSession: { color: C.textSecondary, fontSize: 12, marginTop: 3 },
+  // Score card
+  scoreCard:       { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  scoreCardLeft:   { flex: 1, paddingRight: 12 },
+  teacherName:     { fontSize: 17, fontWeight: "800", color: "#0f172a" },
+  sessionName:     { fontSize: 12, color: "#64748b", marginTop: 2 },
+  scoreCardMeta:   { fontSize: 12, color: "#94a3b8", marginTop: 10 },
+  bigScore:        { fontSize: 52, fontWeight: "900", letterSpacing: -2 },
 
-  // ── Active KPI badge shown inside hero card ────────────────────────────────
-  activeKpiBadge: {
-    alignSelf: "flex-start", marginTop: 8,
-    backgroundColor: C.accent + "18",
-    borderWidth: 1, borderColor: C.accent + "55",
-    borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,
-  },
-  activeKpiBadgeText: { color: C.accentBright, fontSize: 10, fontWeight: "700" },
+  // Progress bar
+  progressRow:    { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 },
+  progressLabel:  { fontSize: 13, fontWeight: "600", color: "#475569" },
+  progressPercent:{ fontSize: 20, fontWeight: "800" },
+  progressTrack:  { height: 7, backgroundColor: "#e2e8f0", borderRadius: 7, overflow: "hidden", marginBottom: 4, marginTop: 4 },
+  progressFill:   { height: 7, borderRadius: 7 },
 
-  heroRight: { alignItems: "flex-end" },
-  heroScore: { fontSize: 56, fontWeight: "900", letterSpacing: -3, lineHeight: 60 },
-  heroScorePct: { fontSize: 24, fontWeight: "700" },
-  statPill: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, alignItems: "center" },
-  statPillValue: { fontSize: 15, fontWeight: "900" },
-  statPillLabel: { color: C.textMuted, fontSize: 10, marginTop: 1 },
-  overallProgressRow: {
-    flexDirection: "row", justifyContent: "space-between",
-    alignItems: "baseline", marginBottom: 10,
-  },
-  overallProgressLabel: { color: C.textSecondary, fontSize: 14, fontWeight: "600" },
-  overallProgressPct: { fontSize: 22, fontWeight: "900" },
-  progressTrack: { height: 7, backgroundColor: C.border, borderRadius: 7, overflow: "hidden", marginBottom: 4 },
-  progressFill: { height: 7, borderRadius: 7 },
-  chartSubtitle: { color: C.textMuted, fontSize: 12, marginBottom: 12 },
-  kpiBlock: {
-    backgroundColor: C.bgCardAlt, borderRadius: 14,
-    borderWidth: 1, padding: 14, marginBottom: 12,
-  },
-  kpiBlockHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 10, gap: 10 },
-  kpiBlockBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 },
-  kpiBlockBadgeText: { fontSize: 10, fontWeight: "800" },
-  kpiBlockTitle: { color: C.textPrimary, fontSize: 13, fontWeight: "700", flex: 1 },
-  subList: { marginTop: 10, gap: 10 },
-  subRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  subRowLeft: { flexDirection: "row", alignItems: "center", flex: 1, gap: 8 },
-  subDot: { width: 6, height: 6, borderRadius: 3 },
-  subName: { color: C.textSecondary, fontSize: 12, flex: 1 },
-  subPct: { fontSize: 14, fontWeight: "800" },
+  // Chart
+  chartNote:     { fontSize: 12, color: "#94a3b8", marginBottom: 12 },
+  chartAxisText: { color: "#94a3b8", fontSize: 10 },
+  barTopLabel:   { color: "#64748b", fontSize: 9, marginBottom: 2 },
 
-  // ── Filter strip inside breakdown card ─────────────────────────────────────
-  filterStrip: {
-    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    backgroundColor: C.accentGlow, borderRadius: 8, paddingHorizontal: 12,
-    paddingVertical: 8, marginBottom: 14, borderWidth: 1, borderColor: C.accent + "33",
-  },
-  filterStripText: { color: C.accentBright, fontSize: 12 },
-  filterStripClear: { color: C.accent, fontSize: 12, fontWeight: "700" },
+  // KPI block
+  kpiBlock:  { backgroundColor: "#f8fafc", borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", padding: 12, marginBottom: 10 },
+  kpiHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 8, gap: 8 },
+  kpiBadge:  { borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
+  kpiBadgeText: { fontSize: 10, fontWeight: "800" },
+  kpiName:   { fontSize: 13, fontWeight: "700", color: "#0f172a", flex: 1 },
+
+  // Sub-indicator row
+  subRow:    { flexDirection: "row", alignItems: "center", marginTop: 8, gap: 8 },
+  subDot:    { width: 6, height: 6, borderRadius: 3, flexShrink: 0 },
+  subName:   { fontSize: 12, color: "#475569", flex: 1 },
+  subPercent:{ fontSize: 13, fontWeight: "800" },
+
 });

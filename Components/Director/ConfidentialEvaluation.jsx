@@ -198,7 +198,7 @@ const ConfidentialEvaluation = () => {
         </TouchableOpacity>
       </View>
 
-      {/* ================= SEARCH BAR ================= */}
+      ================= SEARCH BAR =================
       <View style={styles.searchBox}>
         <Icon name="search" size={20} color="#64748b" />
         <TextInput

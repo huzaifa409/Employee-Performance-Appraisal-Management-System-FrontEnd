@@ -1,16 +1,62 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native'
 import Icon from "react-native-vector-icons/MaterialIcons";
+import BASE_URL from "../../API-URL/API";
 
 const HodDashboard = ({ navigation, route }) => {
 
   const { onLogout } = route.params;
   const { userId } = route.params;
+  const[TopPerformer,setTopPerformer]=useState([]);
+  const[TeacherCount,setTeacherCount]=useState([]);
+
+
+
+
+  useEffect(()=>
+  {
+    GetTopPerformer();
+    GetTeacherCount();
+  },[])
+
+
   console.log("USER ID:", userId);
 
   const handleLogout = () => {
     onLogout();
   };
+
+  const sessionid=3;
+
+  const GetTopPerformer= async ()=>
+  {
+    const response= await fetch(`${BASE_URL}/Performer/GetBestPerformerTeacher/?SessionId=${sessionid}`);
+    
+  // const text = await response.text();
+
+// console.log(text);
+
+    const data = await response.json();
+    console.log(data);
+
+    setTopPerformer(data);
+    
+  
+  }
+
+
+  const GetTeacherCount= async()=>
+  {
+    const response= await fetch(`${BASE_URL}/Performer/GetTeachersCount/?SessionId=${sessionid}`)
+
+    const data= await response.json();
+
+    console.log(data);
+
+    setTeacherCount(data);
+  }
+
+
 
   return (
 
@@ -43,17 +89,17 @@ const HodDashboard = ({ navigation, route }) => {
       <View style={ss.statRow}>
 
         <View style={ss.statBox}>
-          <Text style={ss.statTitle}>Total Teachers</Text>
+          <Text style={ss.statTitle}>Teachers</Text>
           <Icon name="groups" size={46} color="#1565C0" />
-          <Text style={ss.statNumber}>6</Text>
+          <Text style={ss.statNumber}>{TeacherCount.TotalTeachers}</Text>
           <Text style={ss.statSub}>Active Faculty</Text>
         </View>
 
         <View style={ss.statBox}>
           <Text style={ss.statTitle}>Top Performer</Text>
           <Icon name="workspace-premium" size={46} color="#FFC107" />
-          <Text style={ss.statNumber}>Mr. Zahid</Text>
-          <Text style={ss.statSub}>93% Rating</Text>
+          <Text style={ss.statNumber}>{TopPerformer.TeacherName}</Text>
+          <Text style={ss.statSub}>{TopPerformer.Percentage}%</Text>
         </View>
 
       </View>

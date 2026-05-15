@@ -200,22 +200,7 @@ const TeacherDashboard = ({ navigation, userId, onLogout }) => {
         Your performance across KPI categories
       </Text>
 
-      <View style={styles.chartWrap}>
-        <BarChart
-          data={kpiData}
-          barWidth={22}
-          spacing={20}
-          roundedTop
-          frontColor="#2e7d32"
-          yAxisThickness={0}
-          xAxisThickness={0}
-          hideRules
-          maxValue={100}
-        />
-      </View>
-
-      <Text style={styles.score}>89%</Text>
-      <Text style={styles.scoreLabel}>Overall Performance Score</Text>
+      
 
 
       <Text style={styles.sectionTitle}>Performance Sections</Text>

@@ -241,7 +241,7 @@ const ComparisonResult = ({ route }) => {
         </View>
       </View>
 
-      {/* CHART 1 */}
+      {/* CHART 1
       <View style={styles.chartContainer}>
         <Text style={styles.chartTitle}>Performance Breakdown</Text>
         <BarChart
@@ -253,7 +253,7 @@ const ComparisonResult = ({ route }) => {
           yAxisThickness={0}
           xAxisThickness={0}
         />
-      </View>
+      </View> */}
 
       {/* CHART 2 */}
       <View style={styles.chartContainer}>
