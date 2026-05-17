@@ -18,6 +18,10 @@ import OverallPerformance from "../Components/Director/OverallPerformance"
 import CourseEvaluationScreen from "../Components/Director/ExtraFeatures/CourseEvaluationScreen"
 import QuestionAnalysis from "../Components/Director/ExtraFeatures/QuestionAnalysis"
 import ExtraComparison from "../Components/Director/ExtraComparison"
+import KpiBasedPerformance from "../Components/Director/ExtraFeatures/KPIBasedPerformance"
+import KpiBasedComparison from "../Components/Director/ExtraFeatures/KpiBasedComparison"
+
+
 const Stack = createNativeStackNavigator();
 
 const DirectorNavigation = ({ onLogout }) => {
@@ -122,6 +126,23 @@ const DirectorNavigation = ({ onLogout }) => {
       <Stack.Screen
         name="ExtraComparison"
         component={ExtraComparison} 
+        options={{ headerShown: false }}
+      />
+
+
+      {/* ////////KPI based Performance */}
+
+      <Stack.Screen
+        name="KpiBasedPerformance"
+        component={KpiBasedPerformance} 
+        options={{ headerShown: false }}
+      />
+
+
+
+      <Stack.Screen
+        name="KpiBasedComparison"
+        component={KpiBasedComparison} 
         options={{ headerShown: false }}
       />
 

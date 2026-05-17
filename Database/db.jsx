@@ -568,3 +568,38 @@ export const ExtragetConfidentialScoresForPerformance = async (
     return [];
   }
 };
+
+
+
+
+
+
+export const ExtragetConfidentialAverageForTeacher = async (
+  teacherId,
+  sessionId,
+  courseCode = null
+) => {
+  try {
+    const scores = await ExtragetConfidentialScoresForPerformance(
+      teacherId,
+      sessionId,
+      courseCode
+    );
+
+    if (!scores || scores.length === 0) {
+      return 0;
+    }
+
+    const sum = scores.reduce((acc, val) => acc + val, 0);
+    const avgOutOf5 = sum / scores.length;
+
+    // Convert to percentage (since your KPI uses 100 scale)
+    const percentage = (avgOutOf5 / 4) * 100;
+
+    return Number(percentage.toFixed(2));
+
+  } catch (error) {
+    console.log("AVG CONF ERROR:", error);
+    return 0;
+  }
+};

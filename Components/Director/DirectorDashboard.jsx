@@ -165,22 +165,62 @@ const DirectorDashboard = ({ navigation, route }) => {
       </TouchableOpacity>
 
       <TouchableOpacity
-  style={[ss.row, { borderColor: "#fca5a5" }]}
-  onPress={() => navigation.navigate("CourseEvaluationScreen")}
->
-  <View style={[ss.iconBox, { backgroundColor: "#dc2626" }]}>
-    <Icon name="assessment" size={24} color="#fff" />
-  </View>
+        style={[ss.row, { borderColor: "#fca5a5" }]}
+        onPress={() => navigation.navigate("CourseEvaluationScreen")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: "#dc2626" }]}>
+          <Icon name="assessment" size={24} color="#fff" />
+        </View>
 
-  <View style={{ flex: 1 }}>
-    <Text style={ss.rowTitle}>Course Evaluation Report</Text>
-    <Text style={ss.rowDesc}>
-      View detailed reports and analytics of the system
-    </Text>
-  </View>
+        <View style={{ flex: 1 }}>
+          <Text style={ss.rowTitle}>Course Evaluation Report</Text>
+          <Text style={ss.rowDesc}>
+            View detailed reports and analytics of the system
+          </Text>
+        </View>
 
-  <Icon name="chevron-right" size={26} color="#dc2626" />
-</TouchableOpacity>
+        <Icon name="chevron-right" size={26} color="#dc2626" />
+      </TouchableOpacity>
+
+
+
+      <TouchableOpacity
+        style={[ss.row, { borderColor: "#fca5a5" }]}
+        onPress={() => navigation.navigate("KpiBasedPerformance")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: "#dc2626" }]}>
+          <Icon name="assessment" size={24} color="#fff" />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={ss.rowTitle}>KPI Based Performance</Text>
+          <Text style={ss.rowDesc}>
+            View detailed reports and analytics of the system
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#dc2626" />
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[ss.row, { borderColor: "#fca5a5" }]}
+        onPress={() => navigation.navigate("KpiBasedComparison")}
+      >
+        <View style={[ss.iconBox, { backgroundColor: "#dc2626" }]}>
+          <Icon name="assessment" size={24} color="#fff" />
+        </View>
+
+        <View style={{ flex: 1 }}>
+          <Text style={ss.rowTitle}>KPI Based Comparison</Text>
+          <Text style={ss.rowDesc}>
+            View detailed reports and analytics of the system
+          </Text>
+        </View>
+
+        <Icon name="chevron-right" size={26} color="#dc2626" />
+      </TouchableOpacity>
+
+
+
 
       <Text style={ss.quote}>
         "Leadership is not about being in charge. It is about taking care of
